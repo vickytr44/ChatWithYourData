@@ -42,3 +42,30 @@ public class PurchaseOrderType : ObjectType<PurchaseOrder>
         }
     }
 }
+
+public class Product
+{
+    public Guid Id { get; set; }
+}
+
+public class ProductType : ObjectType<Product>
+{
+    protected override void Configure(IObjectTypeDescriptor<Product> descriptor)
+    {
+        descriptor.Name("Product");
+        descriptor.Field(p => p.Id);
+    }
+}
+
+public class PurchaseOrderLineType : ObjectType<PurchaseOrderLine>
+{
+    protected override void Configure(IObjectTypeDescriptor<PurchaseOrderLine> descriptor)
+    {
+        descriptor.Description("Represents a line item in a purchase order.");
+
+        descriptor.Field("product")
+            .Type<ProductType>()
+            .Resolve(ctx => new Product { Id = ctx.Parent<PurchaseOrderLine>().ProductId })
+            .Description("The product associated with this purchase order line (stitched from InventoryService).");
+    }
+}

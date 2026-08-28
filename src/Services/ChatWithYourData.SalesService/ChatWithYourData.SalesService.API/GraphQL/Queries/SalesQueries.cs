@@ -20,6 +20,7 @@ public class SalesQueries
     }
 
     [UseProjection]
+    [Lookup]
     public async Task<Customer?> GetCustomerByIdAsync(
         Guid id,
         CustomerByIdDataLoader dataLoader,

@@ -32,6 +32,8 @@ builder.Services
     .AddQueryType<SalesQueries>()
     .AddMutationType<SalesMutations>()
     .AddType<SalesOrderType>()
+    .AddType<SalesOrderLineType>()
+    .AddType<ProductType>()
     .AddProjections()
     .AddFiltering()
     .AddSorting();

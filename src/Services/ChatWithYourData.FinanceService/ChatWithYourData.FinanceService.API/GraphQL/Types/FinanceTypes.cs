@@ -37,6 +37,13 @@ public class InvoiceType : ObjectType<Invoice>
         descriptor.Field(i => i.Payments)
             .ResolveWith<InvoiceResolvers>(r => r.GetPaymentsAsync(default!, default!, default!))
             .Description("The payments applied to this invoice (resolved via DataLoader).");
+
+        descriptor.Field("customer")
+            .Type<CustomerType>()
+            .Resolve(ctx => ctx.Parent<Invoice>().CustomerId.HasValue
+                ? new Customer { Id = ctx.Parent<Invoice>().CustomerId!.Value }
+                : null)
+            .Description("The customer associated with this invoice (stitched from SalesService).");
     }
 
     private class InvoiceResolvers
@@ -49,5 +56,19 @@ public class InvoiceType : ObjectType<Invoice>
             var payments = await dataLoader.LoadAsync(invoice.Id, cancellationToken);
             return payments ?? new List<Payment>();
         }
+    }
+}
+
+public class Customer
+{
+    public Guid Id { get; set; }
+}
+
+public class CustomerType : ObjectType<Customer>
+{
+    protected override void Configure(IObjectTypeDescriptor<Customer> descriptor)
+    {
+        descriptor.Name("Customer");
+        descriptor.Field(c => c.Id);
     }
 }

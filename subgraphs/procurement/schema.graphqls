@@ -24,7 +24,7 @@ type Query {
       requireOneSlicingArgument: false
     )
     @cost(weight: "10")
-  vendorById(id: UUID!): Vendor @cost(weight: "10")
+  vendorById(id: UUID!): Vendor @lookup @cost(weight: "10")
   purchaseOrders(
     "Returns the first _n_ elements from the list."
     first: Int
@@ -128,6 +128,10 @@ type ProcurementMutationPayloadOfVendorDto {
   error: String
 }
 
+type Product {
+  id: UUID!
+}
+
 "Represents a purchase order issued to a vendor."
 type PurchaseOrder {
   vendorId: UUID!
@@ -159,7 +163,10 @@ type PurchaseOrderDto {
   lines: [PurchaseOrderLineDto!]!
 }
 
+"Represents a line item in a purchase order."
 type PurchaseOrderLine {
+  "The product associated with this purchase order line (stitched from InventoryService)."
+  product: Product @cost(weight: "10")
   purchaseOrderId: UUID!
   productId: UUID!
   sku: String!
@@ -541,3 +548,10 @@ directive @listSize(
   "The `requireOneSlicingArgument` argument can be used to inform the static analysis that it should expect that exactly one of the defined slicing arguments is present in a query. If that is not the case (i.e., if none or multiple slicing arguments are present), the static analysis may throw an error."
   requireOneSlicingArgument: Boolean = true
 ) on FIELD_DEFINITION
+
+"""
+The @lookup directive is used within a source schema to specify output fields
+that can be used by the distributed GraphQL executor to resolve an entity by
+a stable key.
+"""
+directive @lookup on FIELD_DEFINITION

@@ -32,6 +32,8 @@ builder.Services
     .AddQueryType<ProcurementQueries>()
     .AddMutationType<ProcurementMutations>()
     .AddType<PurchaseOrderType>()
+    .AddType<PurchaseOrderLineType>()
+    .AddType<ProductType>()
     .AddProjections()
     .AddFiltering()
     .AddSorting();

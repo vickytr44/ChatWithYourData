@@ -63,6 +63,11 @@ public class GatewayIntegrationTests : IClassFixture<WebApplicationFactory<ChatW
         sdl.Should().Contain("customers");
         sdl.Should().Contain("vendors");
         sdl.Should().Contain("accounts");
+        sdl.Should().Contain("invoices");
+
+        // Stitched entity relationships across subgraphs
+        sdl.Should().Contain("product: Product");
+        sdl.Should().Contain("customer: Customer");
     }
 }
 

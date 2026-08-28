@@ -34,6 +34,7 @@ builder.Services
     .AddMutationType<FinanceMutations>()
     .AddType<JournalEntryType>()
     .AddType<InvoiceType>()
+    .AddType<CustomerType>()
     .AddProjections()
     .AddFiltering()
     .AddSorting();

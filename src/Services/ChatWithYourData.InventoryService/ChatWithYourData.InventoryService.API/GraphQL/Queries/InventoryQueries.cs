@@ -21,6 +21,7 @@ public class InventoryQueries
     }
 
     [UseProjection]
+    [Lookup]
     public async Task<Product?> GetProductByIdAsync(
         Guid id,
         ProductByIdDataLoader dataLoader,

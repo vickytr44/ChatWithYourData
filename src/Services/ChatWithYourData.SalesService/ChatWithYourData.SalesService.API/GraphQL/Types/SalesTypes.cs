@@ -42,3 +42,30 @@ public class SalesOrderType : ObjectType<SalesOrder>
         }
     }
 }
+
+public class Product
+{
+    public Guid Id { get; set; }
+}
+
+public class ProductType : ObjectType<Product>
+{
+    protected override void Configure(IObjectTypeDescriptor<Product> descriptor)
+    {
+        descriptor.Name("Product");
+        descriptor.Field(p => p.Id);
+    }
+}
+
+public class SalesOrderLineType : ObjectType<SalesOrderLine>
+{
+    protected override void Configure(IObjectTypeDescriptor<SalesOrderLine> descriptor)
+    {
+        descriptor.Description("Represents a line item in a sales order.");
+
+        descriptor.Field("product")
+            .Type<ProductType>()
+            .Resolve(ctx => new Product { Id = ctx.Parent<SalesOrderLine>().ProductId })
+            .Description("The product associated with this sales order line (stitched from InventoryService).");
+    }
+}

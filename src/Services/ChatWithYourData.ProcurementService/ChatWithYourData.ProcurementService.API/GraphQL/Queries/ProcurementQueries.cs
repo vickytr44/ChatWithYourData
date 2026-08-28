@@ -20,6 +20,7 @@ public class ProcurementQueries
     }
 
     [UseProjection]
+    [Lookup]
     public async Task<Vendor?> GetVendorByIdAsync(
         Guid id,
         VendorByIdDataLoader dataLoader,

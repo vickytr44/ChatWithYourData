@@ -20,12 +20,23 @@ public class FinanceQueries
     }
 
     [UseProjection]
+    [Lookup]
     public async Task<Account?> GetAccountByIdAsync(
         Guid id,
         AccountByIdDataLoader dataLoader,
         CancellationToken cancellationToken)
     {
         return await dataLoader.LoadAsync(id, cancellationToken);
+    }
+
+    [UseProjection]
+    [Lookup]
+    public async Task<Invoice?> GetInvoiceByIdAsync(
+        Guid id,
+        FinanceDbContext dbContext,
+        CancellationToken cancellationToken)
+    {
+        return await dbContext.Invoices.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
     }
 
     [UsePaging]
