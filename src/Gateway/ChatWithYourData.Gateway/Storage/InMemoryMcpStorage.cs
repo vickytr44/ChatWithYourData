@@ -1,4 +1,5 @@
 using HotChocolate.Adapters.Mcp.Storage;
+using HotChocolate.Language;
 
 namespace ChatWithYourData.Gateway.Storage;
 
@@ -14,6 +15,44 @@ public class InMemoryMcpStorage : IMcpStorage
         if (tools != null)
         {
             _tools.AddRange(tools);
+        }
+        else
+        {
+            _tools.AddRange(new OperationToolDefinition[]
+            {
+                new(Utf8GraphQLParser.Parse("{ products { nodes { id sku name unitPrice } } }"))
+                {
+                    Name = "get_products"
+                },
+                new(Utf8GraphQLParser.Parse("{ salesOrders { nodes { id orderNumber status totalAmount } } }"))
+                {
+                    Name = "get_sales_orders"
+                },
+                new(Utf8GraphQLParser.Parse("{ purchaseOrders { nodes { id poNumber status totalCost } } }"))
+                {
+                    Name = "get_purchase_orders"
+                },
+                new(Utf8GraphQLParser.Parse("{ invoices { nodes { id invoiceNumber status totalAmount paidAmount } } }"))
+                {
+                    Name = "get_invoices"
+                },
+                new(Utf8GraphQLParser.Parse("mutation ($input: AdjustStockInput!) { adjustStock(input: $input) { data { id quantityOnHand } success error } }"))
+                {
+                    Name = "adjust_stock"
+                },
+                new(Utf8GraphQLParser.Parse("mutation ($input: CreateSalesOrderInput!) { createSalesOrder(input: $input) { data { id orderNumber } success error } }"))
+                {
+                    Name = "create_sales_order"
+                },
+                new(Utf8GraphQLParser.Parse("mutation ($input: CreatePurchaseOrderInput!) { createPurchaseOrder(input: $input) { data { id poNumber } success error } }"))
+                {
+                    Name = "create_purchase_order"
+                },
+                new(Utf8GraphQLParser.Parse("mutation ($input: PostJournalEntryInput!) { postJournalEntry(input: $input) { data { id entryNumber } success error } }"))
+                {
+                    Name = "post_journal_entry"
+                }
+            });
         }
 
         if (prompts != null)
