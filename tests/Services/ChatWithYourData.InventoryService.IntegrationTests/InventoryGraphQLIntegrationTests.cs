@@ -60,10 +60,10 @@ public class InventoryGraphQLIntegrationTests : IClassFixture<WebApplicationFact
 
         // Act
         var response = await _client.PostAsync("/graphql", content);
+        var jsonResponse = await response.Content.ReadAsStringAsync();
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var jsonResponse = await response.Content.ReadAsStringAsync();
         jsonResponse.Should().NotContain("\"errors\":");
         jsonResponse.Should().Contain("PRD-LAP-001");
         jsonResponse.Should().Contain("Enterprise Pro Laptop 16\\\"");

@@ -1,60 +1,70 @@
+using ChatWithYourData.FinanceService.API.GraphQL.Errors;
 using ChatWithYourData.FinanceService.Application.Features.Finance.Commands;
 using ChatWithYourData.FinanceService.Application.Features.Finance.DTOs;
+using ChatWithYourData.FinanceService.Domain.Entities;
 using ChatWithYourData.FinanceService.Domain.Enums;
-using HotChocolate;
 using HotChocolate.Types;
 using MediatR;
 
 namespace ChatWithYourData.FinanceService.API.GraphQL.Mutations;
 
-public record CreateAccountInput(
-    string AccountCode,
-    string Name,
-    AccountType Type,
-    string Description,
-    decimal InitialBalance
-);
-
-public record PostJournalEntryInput(
-    string Description,
-    string Reference,
-    List<CreateJournalLineInput> Lines
-);
-
-public record FinanceMutationPayload<T>(bool Success, T? Data, string? Error);
-
-[GraphQLName("Mutation")]
-public class FinanceMutations
+[MutationType]
+internal static partial class FinanceMutations
 {
-    public async Task<FinanceMutationPayload<AccountDto>> CreateAccountAsync(
-        CreateAccountInput input,
-        [Service] IMediator mediator,
+    [Error(typeof(AccountCodeAlreadyExistsException))]
+    public static async Task<Account> CreateAccountAsync(
+        string accountCode,
+        string name,
+        AccountType type,
+        string description,
+        decimal initialBalance,
+        IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var command = new CreateAccountCommand(
-            input.AccountCode,
-            input.Name,
-            input.Type,
-            input.Description,
-            input.InitialBalance
-        );
-
+        var command = new CreateAccountCommand(accountCode, name, type, description, initialBalance);
         var result = await mediator.Send(command, cancellationToken);
-        return new FinanceMutationPayload<AccountDto>(result.IsSuccess, result.Value, result.Error);
+
+        if (!result.IsSuccess)
+            throw new AccountCodeAlreadyExistsException(accountCode);
+
+        return new Account
+        {
+            Id = result.Value!.Id,
+            AccountCode = result.Value.AccountCode,
+            Name = result.Value.Name,
+            Type = result.Value.Type,
+            Description = result.Value.Description,
+            CurrentBalance = result.Value.CurrentBalance,
+            IsActive = result.Value.IsActive
+        };
     }
 
-    public async Task<FinanceMutationPayload<JournalEntryDto>> PostJournalEntryAsync(
-        PostJournalEntryInput input,
-        [Service] IMediator mediator,
+    [Error(typeof(UnbalancedJournalEntryException))]
+    public static async Task<JournalEntry> PostJournalEntryAsync(
+        string description,
+        string reference,
+        List<CreateJournalLineInput> lines,
+        IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var command = new PostJournalEntryCommand(
-            input.Description,
-            input.Reference,
-            input.Lines
-        );
-
+        var command = new PostJournalEntryCommand(description, reference, lines);
         var result = await mediator.Send(command, cancellationToken);
-        return new FinanceMutationPayload<JournalEntryDto>(result.IsSuccess, result.Value, result.Error);
+
+        if (!result.IsSuccess)
+        {
+            var debits = lines?.Sum(l => l.DebitAmount) ?? 0;
+            var credits = lines?.Sum(l => l.CreditAmount) ?? 0;
+            throw new UnbalancedJournalEntryException(debits, credits);
+        }
+
+        return new JournalEntry
+        {
+            Id = result.Value!.Id,
+            EntryNumber = result.Value.EntryNumber,
+            EntryDateUtc = result.Value.EntryDateUtc,
+            Description = result.Value.Description,
+            Reference = result.Value.Reference,
+            IsPosted = result.Value.IsPosted
+        };
     }
 }

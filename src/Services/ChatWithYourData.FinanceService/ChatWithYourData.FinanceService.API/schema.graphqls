@@ -1,0 +1,554 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  accounts(
+    "Returns the first _n_ elements from the list."
+    first: Int
+    "Returns the elements in the list that come after the specified cursor."
+    after: String
+    "Returns the last _n_ elements from the list."
+    last: Int
+    "Returns the elements in the list that come before the specified cursor."
+    before: String
+    where: AccountFilterInput @cost(weight: "10")
+    order: [AccountSortInput!] @cost(weight: "10")
+  ): AccountConnection!
+    @listSize(
+      assumedSize: 150
+      slicingArguments: ["first", "last"]
+      slicingArgumentDefaultValue: 25
+      sizedFields: ["edges", "nodes"]
+      requireOneSlicingArgument: false
+    )
+    @cost(weight: "10")
+  accountById(id: UUID!): Account @lookup @cost(weight: "10")
+  invoiceById(id: UUID!): Invoice @lookup @cost(weight: "10")
+  journalEntries(
+    "Returns the first _n_ elements from the list."
+    first: Int
+    "Returns the elements in the list that come after the specified cursor."
+    after: String
+    "Returns the last _n_ elements from the list."
+    last: Int
+    "Returns the elements in the list that come before the specified cursor."
+    before: String
+    where: JournalEntryFilterInput @cost(weight: "10")
+    order: [JournalEntrySortInput!] @cost(weight: "10")
+  ): JournalEntryConnection!
+    @listSize(
+      assumedSize: 150
+      slicingArguments: ["first", "last"]
+      slicingArgumentDefaultValue: 25
+      sizedFields: ["edges", "nodes"]
+      requireOneSlicingArgument: false
+    )
+    @cost(weight: "10")
+  journalEntryById(id: UUID!): JournalEntry @lookup @cost(weight: "10")
+  invoices(
+    "Returns the first _n_ elements from the list."
+    first: Int
+    "Returns the elements in the list that come after the specified cursor."
+    after: String
+    "Returns the last _n_ elements from the list."
+    last: Int
+    "Returns the elements in the list that come before the specified cursor."
+    before: String
+    where: InvoiceFilterInput @cost(weight: "10")
+    order: [InvoiceSortInput!] @cost(weight: "10")
+  ): InvoiceConnection!
+    @listSize(
+      assumedSize: 150
+      slicingArguments: ["first", "last"]
+      slicingArgumentDefaultValue: 25
+      sizedFields: ["edges", "nodes"]
+      requireOneSlicingArgument: false
+    )
+    @cost(weight: "10")
+  payments(
+    "Returns the first _n_ elements from the list."
+    first: Int
+    "Returns the elements in the list that come after the specified cursor."
+    after: String
+    "Returns the last _n_ elements from the list."
+    last: Int
+    "Returns the elements in the list that come before the specified cursor."
+    before: String
+    where: PaymentFilterInput @cost(weight: "10")
+    order: [PaymentSortInput!] @cost(weight: "10")
+  ): PaymentConnection!
+    @listSize(
+      assumedSize: 150
+      slicingArguments: ["first", "last"]
+      slicingArgumentDefaultValue: 25
+      sizedFields: ["edges", "nodes"]
+      requireOneSlicingArgument: false
+    )
+    @cost(weight: "10")
+  paymentById(id: UUID!): Payment @lookup @cost(weight: "10")
+}
+
+type Mutation {
+  createAccount(input: CreateAccountInput!): CreateAccountPayload!
+    @cost(weight: "10")
+  postJournalEntry(input: PostJournalEntryInput!): PostJournalEntryPayload!
+    @cost(weight: "10")
+}
+
+type Account @key(fields: "id") {
+  accountCode: String!
+  name: String!
+  type: AccountType!
+  description: String!
+  currentBalance: Decimal!
+  isActive: Boolean!
+  id: UUID!
+  createdAtUtc: DateTime!
+  updatedAtUtc: DateTime
+}
+
+type AccountCodeAlreadyExistsError implements Error {
+  message: String!
+  accountCode: String!
+}
+
+"A connection to a list of items."
+type AccountConnection @shareable {
+  "A list of edges."
+  edges: [AccountEdge!]
+  "A flattened list of the nodes"
+  nodes: [Account!]
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+type AccountEdge @shareable {
+  "The item at the end of the edge."
+  node: Account!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+type CreateAccountPayload {
+  account: Account
+  errors: [CreateAccountError!]
+}
+
+type Invoice @key(fields: "id") {
+  payments: [Payment!]! @cost(weight: "10")
+  invoiceNumber: String!
+  customerId: UUID
+  salesOrderId: UUID
+  issueDateUtc: DateTime!
+  dueDateUtc: DateTime!
+  subtotal: Decimal!
+  taxAmount: Decimal!
+  totalAmount: Decimal!
+  paidAmount: Decimal!
+  status: InvoiceStatus!
+  notes: String!
+  id: UUID!
+  createdAtUtc: DateTime!
+  updatedAtUtc: DateTime
+}
+
+"A connection to a list of items."
+type InvoiceConnection @shareable {
+  "A list of edges."
+  edges: [InvoiceEdge!]
+  "A flattened list of the nodes"
+  nodes: [Invoice!]
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+type InvoiceEdge @shareable {
+  "The item at the end of the edge."
+  node: Invoice!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+type JournalEntry @key(fields: "id") {
+  lines: [JournalLine!]! @cost(weight: "10")
+  entryNumber: String!
+  entryDateUtc: DateTime!
+  description: String!
+  reference: String!
+  isPosted: Boolean!
+  id: UUID!
+  createdAtUtc: DateTime!
+  updatedAtUtc: DateTime
+}
+
+"A connection to a list of items."
+type JournalEntryConnection @shareable {
+  "A list of edges."
+  edges: [JournalEntryEdge!]
+  "A flattened list of the nodes"
+  nodes: [JournalEntry!]
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+type JournalEntryEdge @shareable {
+  "The item at the end of the edge."
+  node: JournalEntry!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+type JournalLine {
+  account: Account @cost(weight: "10")
+  journalEntryId: UUID!
+  debitAmount: Decimal!
+  creditAmount: Decimal!
+  memo: String!
+  id: UUID!
+  createdAtUtc: DateTime!
+  updatedAtUtc: DateTime
+}
+
+"A cursor that points to a specific page."
+type PageCursor @shareable {
+  "The page number."
+  page: Int!
+  "The cursor."
+  cursor: String!
+}
+
+"Information about pagination in a connection."
+type PageInfo @shareable {
+  "Indicates whether more edges exist following the set defined by the clients arguments."
+  hasNextPage: Boolean!
+  "Indicates whether more edges exist prior the set defined by the clients arguments."
+  hasPreviousPage: Boolean!
+  "When paginating backwards, the cursor to continue."
+  startCursor: String
+  "When paginating forwards, the cursor to continue."
+  endCursor: String
+  "A list of cursors to continue paginating forwards."
+  forwardCursors: [PageCursor!]!
+  "A list of cursors to continue paginating backwards."
+  backwardCursors: [PageCursor!]!
+}
+
+type Payment @key(fields: "id") {
+  invoice: Invoice @cost(weight: "10")
+  paymentNumber: String!
+  paymentDateUtc: DateTime!
+  amount: Decimal!
+  method: PaymentMethod!
+  referenceNumber: String!
+  id: UUID!
+  createdAtUtc: DateTime!
+  updatedAtUtc: DateTime
+}
+
+"A connection to a list of items."
+type PaymentConnection @shareable {
+  "A list of edges."
+  edges: [PaymentEdge!]
+  "A flattened list of the nodes"
+  nodes: [Payment!]
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+type PaymentEdge @shareable {
+  "The item at the end of the edge."
+  node: Payment!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+type PostJournalEntryPayload {
+  journalEntry: JournalEntry
+  errors: [PostJournalEntryError!]
+}
+
+type UnbalancedJournalEntryError implements Error {
+  message: String!
+  totalDebits: Decimal!
+  totalCredits: Decimal!
+}
+
+interface Error {
+  message: String!
+}
+
+union CreateAccountError = AccountCodeAlreadyExistsError
+
+union PostJournalEntryError = UnbalancedJournalEntryError
+
+input AccountFilterInput {
+  and: [AccountFilterInput!]
+  or: [AccountFilterInput!]
+  accountCode: StringOperationFilterInput
+  name: StringOperationFilterInput
+  type: AccountTypeOperationFilterInput
+  isActive: BooleanOperationFilterInput
+}
+
+input AccountSortInput {
+  accountCode: SortEnumType @cost(weight: "10")
+  name: SortEnumType @cost(weight: "10")
+  currentBalance: SortEnumType @cost(weight: "10")
+}
+
+input AccountTypeOperationFilterInput {
+  eq: AccountType @cost(weight: "10")
+  neq: AccountType @cost(weight: "10")
+  in: [AccountType!] @cost(weight: "10")
+  nin: [AccountType!] @cost(weight: "10")
+}
+
+input BooleanOperationFilterInput {
+  eq: Boolean @cost(weight: "10")
+  neq: Boolean @cost(weight: "10")
+}
+
+input CreateAccountInput {
+  accountCode: String!
+  name: String!
+  type: AccountType!
+  description: String!
+  initialBalance: Decimal!
+}
+
+input CreateJournalLineInput {
+  accountId: UUID!
+  debitAmount: Decimal!
+  creditAmount: Decimal!
+  memo: String!
+}
+
+input DateTimeOperationFilterInput {
+  eq: DateTime @cost(weight: "10")
+  neq: DateTime @cost(weight: "10")
+  in: [DateTime] @cost(weight: "10")
+  nin: [DateTime] @cost(weight: "10")
+  gt: DateTime @cost(weight: "10")
+  ngt: DateTime @cost(weight: "10")
+  gte: DateTime @cost(weight: "10")
+  ngte: DateTime @cost(weight: "10")
+  lt: DateTime @cost(weight: "10")
+  nlt: DateTime @cost(weight: "10")
+  lte: DateTime @cost(weight: "10")
+  nlte: DateTime @cost(weight: "10")
+}
+
+input InvoiceFilterInput {
+  and: [InvoiceFilterInput!]
+  or: [InvoiceFilterInput!]
+  invoiceNumber: StringOperationFilterInput
+  customerId: UuidOperationFilterInput
+  status: InvoiceStatusOperationFilterInput
+  dueDateUtc: DateTimeOperationFilterInput
+}
+
+input InvoiceSortInput {
+  invoiceNumber: SortEnumType @cost(weight: "10")
+  issueDateUtc: SortEnumType @cost(weight: "10")
+  totalAmount: SortEnumType @cost(weight: "10")
+}
+
+input InvoiceStatusOperationFilterInput {
+  eq: InvoiceStatus @cost(weight: "10")
+  neq: InvoiceStatus @cost(weight: "10")
+  in: [InvoiceStatus!] @cost(weight: "10")
+  nin: [InvoiceStatus!] @cost(weight: "10")
+}
+
+input JournalEntryFilterInput {
+  and: [JournalEntryFilterInput!]
+  or: [JournalEntryFilterInput!]
+  entryNumber: StringOperationFilterInput
+  entryDateUtc: DateTimeOperationFilterInput
+  isPosted: BooleanOperationFilterInput
+}
+
+input JournalEntrySortInput {
+  entryNumber: SortEnumType @cost(weight: "10")
+  entryDateUtc: SortEnumType @cost(weight: "10")
+}
+
+input PaymentFilterInput {
+  and: [PaymentFilterInput!]
+  or: [PaymentFilterInput!]
+  invoiceId: UuidOperationFilterInput
+  paymentNumber: StringOperationFilterInput
+  method: PaymentMethodOperationFilterInput
+}
+
+input PaymentMethodOperationFilterInput {
+  eq: PaymentMethod @cost(weight: "10")
+  neq: PaymentMethod @cost(weight: "10")
+  in: [PaymentMethod!] @cost(weight: "10")
+  nin: [PaymentMethod!] @cost(weight: "10")
+}
+
+input PaymentSortInput {
+  paymentNumber: SortEnumType @cost(weight: "10")
+  paymentDateUtc: SortEnumType @cost(weight: "10")
+  amount: SortEnumType @cost(weight: "10")
+}
+
+input PostJournalEntryInput {
+  description: String!
+  reference: String!
+  lines: [CreateJournalLineInput!]!
+}
+
+input StringOperationFilterInput {
+  and: [StringOperationFilterInput!]
+  or: [StringOperationFilterInput!]
+  eq: String @cost(weight: "10")
+  neq: String @cost(weight: "10")
+  contains: String @cost(weight: "20")
+  ncontains: String @cost(weight: "20")
+  in: [String] @cost(weight: "10")
+  nin: [String] @cost(weight: "10")
+  startsWith: String @cost(weight: "20")
+  nstartsWith: String @cost(weight: "20")
+  endsWith: String @cost(weight: "20")
+  nendsWith: String @cost(weight: "20")
+}
+
+input UuidOperationFilterInput {
+  eq: UUID @cost(weight: "10")
+  neq: UUID @cost(weight: "10")
+  in: [UUID] @cost(weight: "10")
+  nin: [UUID] @cost(weight: "10")
+  gt: UUID @cost(weight: "10")
+  ngt: UUID @cost(weight: "10")
+  gte: UUID @cost(weight: "10")
+  ngte: UUID @cost(weight: "10")
+  lt: UUID @cost(weight: "10")
+  nlt: UUID @cost(weight: "10")
+  lte: UUID @cost(weight: "10")
+  nlte: UUID @cost(weight: "10")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOIDED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CREDIT_CARD
+  CHECK
+  WIRE
+  CASH
+}
+
+enum ScalarSerializationType {
+  STRING
+  BOOLEAN
+  INT
+  FLOAT
+  OBJECT
+  LIST
+}
+
+enum SortEnumType {
+  ASC
+  DESC
+}
+
+"The `DateTime` scalar type represents a date and time with time zone offset information."
+scalar DateTime
+  @serializeAs(
+    type: STRING
+    pattern: "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:[Zz]|[+-]\\d{2}:\\d{2})$"
+  )
+  @specifiedBy(url: "https://scalars.graphql.org/chillicream/date-time.html")
+
+"The `Decimal` scalar type represents a decimal floating-point number with high precision."
+scalar Decimal
+  @serializeAs(type: FLOAT)
+  @specifiedBy(url: "https://scalars.graphql.org/chillicream/decimal.html")
+
+scalar FieldSelectionSet
+
+"The `UUID` scalar type represents a Universally Unique Identifier (UUID) as defined by RFC 9562."
+scalar UUID
+  @serializeAs(
+    type: STRING
+    pattern: "^[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}$"
+  )
+  @specifiedBy(url: "https://scalars.graphql.org/chillicream/uuid.html")
+
+"The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
+directive @cost(
+  "The `weight` argument defines what value to add to the overall cost for every appearance, or possible appearance, of a type, field, argument, etc."
+  weight: String!
+) on
+  | SCALAR
+  | OBJECT
+  | FIELD_DEFINITION
+  | ARGUMENT_DEFINITION
+  | ENUM
+  | INPUT_FIELD_DEFINITION
+
+"""
+The @key directive is used to designate an entity's unique key,
+which identifies how to uniquely reference an instance of
+an entity across different source schemas.
+"""
+directive @key("The field selection set syntax." fields: FieldSelectionSet!) repeatable on
+  | OBJECT
+  | INTERFACE
+
+"The purpose of the `@listSize` directive is to either inform the static analysis about the size of returned lists (if that information is statically available), or to point the analysis to where to find that information."
+directive @listSize(
+  "The `assumedSize` argument can be used to statically define the maximum length of a list returned by a field."
+  assumedSize: Int
+  "The `slicingArguments` argument can be used to define which of the field's arguments with numeric type are slicing arguments, so that their value determines the size of the list returned by that field. It may specify a list of multiple slicing arguments."
+  slicingArguments: [String!]
+  "The `slicingArgumentDefaultValue` argument can be used to define a default value for a slicing argument, which is used if the argument is not present in a query."
+  slicingArgumentDefaultValue: Int
+  "The `sizedFields` argument can be used to define that the value of the `assumedSize` argument or of a slicing argument does not affect the size of a list returned by a field itself, but that of a list returned by one of its sub-fields."
+  sizedFields: [String!]
+  "The `requireOneSlicingArgument` argument can be used to inform the static analysis that it should expect that exactly one of the defined slicing arguments is present in a query. If that is not the case (i.e., if none or multiple slicing arguments are present), the static analysis may throw an error."
+  requireOneSlicingArgument: Boolean = true
+) on FIELD_DEFINITION
+
+"""
+The @lookup directive is used within a source schema to specify output fields
+that can be used by the distributed GraphQL executor to resolve an entity by
+a stable key.
+"""
+directive @lookup on FIELD_DEFINITION
+
+directive @serializeAs(
+  "The primitive type a scalar is serialized to."
+  type: [ScalarSerializationType!]!
+  "The ECMA-262 regex pattern that the serialized scalar value conforms to."
+  pattern: String
+) on SCALAR
+
+directive @shareable repeatable on OBJECT | FIELD_DEFINITION

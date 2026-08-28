@@ -1,63 +1,85 @@
 using ChatWithYourData.FinanceService.Domain.Entities;
 using ChatWithYourData.FinanceService.Infrastructure.Persistence;
-using GreenDonut;
+using GreenDonut.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChatWithYourData.FinanceService.API.GraphQL.DataLoaders;
 
-public class AccountByIdDataLoader(
-    FinanceDbContext dbContext,
-    IBatchScheduler batchScheduler,
-    DataLoaderOptions? options = null)
-    : BatchDataLoader<Guid, Account>(batchScheduler, options ?? new DataLoaderOptions())
+internal static class FinanceDataLoaders
 {
-    protected override async Task<IReadOnlyDictionary<Guid, Account>> LoadBatchAsync(
-        IReadOnlyList<Guid> keys,
+    [DataLoader]
+    public static async Task<Dictionary<Guid, Account>> GetAccountByIdAsync(
+        IReadOnlyList<Guid> ids,
+        QueryContext<Account> query,
+        FinanceDbContext context,
         CancellationToken cancellationToken)
-    {
-        return await dbContext.Accounts
+        => await context.Accounts
             .AsNoTracking()
-            .Where(a => keys.Contains(a.Id))
+            .Where(a => ids.Contains(a.Id))
+            .With(query.Include(a => a.Id))
             .ToDictionaryAsync(a => a.Id, cancellationToken);
-    }
-}
 
-public class JournalLinesByEntryIdDataLoader(
-    FinanceDbContext dbContext,
-    IBatchScheduler batchScheduler,
-    DataLoaderOptions? options = null)
-    : BatchDataLoader<Guid, List<JournalLine>>(batchScheduler, options ?? new DataLoaderOptions())
-{
-    protected override async Task<IReadOnlyDictionary<Guid, List<JournalLine>>> LoadBatchAsync(
-        IReadOnlyList<Guid> keys,
+    [DataLoader]
+    public static async Task<Dictionary<Guid, Invoice>> GetInvoiceByIdAsync(
+        IReadOnlyList<Guid> ids,
+        QueryContext<Invoice> query,
+        FinanceDbContext context,
         CancellationToken cancellationToken)
-    {
-        var lines = await dbContext.JournalLines
+        => await context.Invoices
             .AsNoTracking()
-            .Where(l => keys.Contains(l.JournalEntryId))
-            .ToListAsync(cancellationToken);
+            .Where(i => ids.Contains(i.Id))
+            .With(query.Include(i => i.Id))
+            .ToDictionaryAsync(i => i.Id, cancellationToken);
 
-        return lines.GroupBy(l => l.JournalEntryId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-    }
-}
-
-public class PaymentsByInvoiceIdDataLoader(
-    FinanceDbContext dbContext,
-    IBatchScheduler batchScheduler,
-    DataLoaderOptions? options = null)
-    : BatchDataLoader<Guid, List<Payment>>(batchScheduler, options ?? new DataLoaderOptions())
-{
-    protected override async Task<IReadOnlyDictionary<Guid, List<Payment>>> LoadBatchAsync(
-        IReadOnlyList<Guid> keys,
+    [DataLoader]
+    public static async Task<Dictionary<Guid, JournalEntry>> GetJournalEntryByIdAsync(
+        IReadOnlyList<Guid> ids,
+        QueryContext<JournalEntry> query,
+        FinanceDbContext context,
         CancellationToken cancellationToken)
-    {
-        var payments = await dbContext.Payments
+        => await context.JournalEntries
             .AsNoTracking()
-            .Where(p => keys.Contains(p.InvoiceId))
-            .ToListAsync(cancellationToken);
+            .Where(j => ids.Contains(j.Id))
+            .With(query.Include(j => j.Id))
+            .ToDictionaryAsync(j => j.Id, cancellationToken);
 
-        return payments.GroupBy(p => p.InvoiceId)
+    [DataLoader]
+    public static async Task<Dictionary<Guid, Payment>> GetPaymentByIdAsync(
+        IReadOnlyList<Guid> ids,
+        QueryContext<Payment> query,
+        FinanceDbContext context,
+        CancellationToken cancellationToken)
+        => await context.Payments
+            .AsNoTracking()
+            .Where(p => ids.Contains(p.Id))
+            .With(query.Include(p => p.Id))
+            .ToDictionaryAsync(p => p.Id, cancellationToken);
+
+    [DataLoader]
+    public static async Task<Dictionary<Guid, List<JournalLine>>> GetJournalLinesByEntryIdAsync(
+        IReadOnlyList<Guid> entryIds,
+        QueryContext<JournalLine> query,
+        FinanceDbContext context,
+        CancellationToken cancellationToken)
+        => (await context.JournalLines
+            .AsNoTracking()
+            .Where(l => entryIds.Contains(l.JournalEntryId))
+            .With(query.Include(l => l.JournalEntryId))
+            .ToListAsync(cancellationToken))
+            .GroupBy(l => l.JournalEntryId)
             .ToDictionary(g => g.Key, g => g.ToList());
-    }
+
+    [DataLoader]
+    public static async Task<Dictionary<Guid, List<Payment>>> GetPaymentsByInvoiceIdAsync(
+        IReadOnlyList<Guid> invoiceIds,
+        QueryContext<Payment> query,
+        FinanceDbContext context,
+        CancellationToken cancellationToken)
+        => (await context.Payments
+            .AsNoTracking()
+            .Where(p => invoiceIds.Contains(p.InvoiceId))
+            .With(query.Include(p => p.InvoiceId))
+            .ToListAsync(cancellationToken))
+            .GroupBy(p => p.InvoiceId)
+            .ToDictionary(g => g.Key, g => g.ToList());
 }

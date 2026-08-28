@@ -70,4 +70,39 @@ public class ProcurementGraphQLIntegrationTests : IClassFixture<WebApplicationFa
         jsonResponse.Should().Contain("Silicon Microdevices Inc");
         jsonResponse.Should().Contain("PRD-LAP-001");
     }
+
+    [Fact]
+    public async Task PurchaseOrderLinesQuery_ReturnsProductStub()
+    {
+        // Arrange
+        var requestBody = new
+        {
+            query = @"
+            {
+              purchaseOrders {
+                nodes {
+                  poNumber
+                  lines {
+                    sku
+                    product {
+                      id
+                    }
+                  }
+                }
+              }
+            }"
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/graphql", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        jsonResponse.Should().NotContain("\"errors\":");
+        jsonResponse.Should().Contain("PO-00001");
+        jsonResponse.Should().Contain("product");
+    }
 }

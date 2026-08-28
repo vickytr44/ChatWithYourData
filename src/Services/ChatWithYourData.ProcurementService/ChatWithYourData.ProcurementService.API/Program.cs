@@ -1,7 +1,4 @@
-using ChatWithYourData.ProcurementService.API.GraphQL.DataLoaders;
-using ChatWithYourData.ProcurementService.API.GraphQL.Mutations;
-using ChatWithYourData.ProcurementService.API.GraphQL.Queries;
-using ChatWithYourData.ProcurementService.API.GraphQL.Types;
+using ChatWithYourData.ProcurementService.API.GraphQL;
 using ChatWithYourData.ProcurementService.Application.Features.Procurement.Commands;
 using ChatWithYourData.ProcurementService.Infrastructure;
 using ChatWithYourData.ProcurementService.Infrastructure.Persistence;
@@ -22,19 +19,19 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreateVendorCommandValidator).
 // Infrastructure Services
 builder.Services.AddProcurementInfrastructure(builder.Configuration);
 
-// Register DataLoaders
-builder.Services.AddScoped<VendorByIdDataLoader>();
-builder.Services.AddScoped<PoLinesByPoIdDataLoader>();
-
-// GraphQL Configuration with Projections, Filtering, Sorting, and DataLoaders
+// GraphQL Configuration — subgraph with source-generated types
 builder.Services
-    .AddGraphQLServer()
-    .AddQueryType<ProcurementQueries>()
-    .AddMutationType<ProcurementMutations>()
-    .AddType<PurchaseOrderType>()
-    .AddType<PurchaseOrderLineType>()
-    .AddType<ProductType>()
-    .AddProjections()
+    .AddGraphQLServer("procurement-api")
+    .AddSourceSchemaDefaults()
+    .AddDefaultSettings()
+    .ModifyPagingOptions(o =>
+    {
+        o.DefaultPageSize = 25;
+        o.MaxPageSize = 150;
+        o.IncludeTotalCount = true;
+        o.NullOrdering = GreenDonut.Data.NullOrdering.NativeNullsLast;
+    })
+    .AddProcurementTypes()
     .AddFiltering()
     .AddSorting();
 

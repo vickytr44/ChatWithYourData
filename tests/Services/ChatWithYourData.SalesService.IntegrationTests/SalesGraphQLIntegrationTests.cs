@@ -70,4 +70,39 @@ public class SalesGraphQLIntegrationTests : IClassFixture<WebApplicationFactory<
         jsonResponse.Should().Contain("Acme Technologies Corp");
         jsonResponse.Should().Contain("PRD-LAP-001");
     }
+
+    [Fact]
+    public async Task SalesOrderLinesQuery_ReturnsProductStub()
+    {
+        // Arrange
+        var requestBody = new
+        {
+            query = @"
+            {
+              salesOrders {
+                nodes {
+                  orderNumber
+                  lines {
+                    sku
+                    product {
+                      id
+                    }
+                  }
+                }
+              }
+            }"
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/graphql", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        jsonResponse.Should().NotContain("\"errors\":");
+        jsonResponse.Should().Contain("SO-00001");
+        jsonResponse.Should().Contain("product");
+    }
 }

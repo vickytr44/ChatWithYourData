@@ -1,43 +1,59 @@
 using ChatWithYourData.SalesService.Domain.Entities;
 using ChatWithYourData.SalesService.Infrastructure.Persistence;
-using GreenDonut;
+using GreenDonut.Data;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChatWithYourData.SalesService.API.GraphQL.DataLoaders;
 
-public class CustomerByIdDataLoader(
-    SalesDbContext dbContext,
-    IBatchScheduler batchScheduler,
-    DataLoaderOptions? options = null)
-    : BatchDataLoader<Guid, Customer>(batchScheduler, options ?? new DataLoaderOptions())
+internal static class SalesDataLoaders
 {
-    protected override async Task<IReadOnlyDictionary<Guid, Customer>> LoadBatchAsync(
-        IReadOnlyList<Guid> keys,
+    [DataLoader]
+    public static async Task<Dictionary<Guid, Customer>> GetCustomerByIdAsync(
+        IReadOnlyList<Guid> ids,
+        QueryContext<Customer> query,
+        SalesDbContext context,
         CancellationToken cancellationToken)
-    {
-        return await dbContext.Customers
+        => await context.Customers
             .AsNoTracking()
-            .Where(c => keys.Contains(c.Id))
+            .Where(c => ids.Contains(c.Id))
+            .With(query.Include(c => c.Id))
             .ToDictionaryAsync(c => c.Id, cancellationToken);
-    }
-}
 
-public class OrderLinesByOrderIdDataLoader(
-    SalesDbContext dbContext,
-    IBatchScheduler batchScheduler,
-    DataLoaderOptions? options = null)
-    : BatchDataLoader<Guid, List<SalesOrderLine>>(batchScheduler, options ?? new DataLoaderOptions())
-{
-    protected override async Task<IReadOnlyDictionary<Guid, List<SalesOrderLine>>> LoadBatchAsync(
-        IReadOnlyList<Guid> keys,
+    [DataLoader]
+    public static async Task<Dictionary<Guid, SalesOrder>> GetSalesOrderByIdAsync(
+        IReadOnlyList<Guid> ids,
+        QueryContext<SalesOrder> query,
+        SalesDbContext context,
         CancellationToken cancellationToken)
-    {
-        var lines = await dbContext.SalesOrderLines
+        => await context.SalesOrders
             .AsNoTracking()
-            .Where(l => keys.Contains(l.SalesOrderId))
-            .ToListAsync(cancellationToken);
+            .Where(o => ids.Contains(o.Id))
+            .With(query.Include(o => o.Id))
+            .ToDictionaryAsync(o => o.Id, cancellationToken);
 
-        return lines.GroupBy(l => l.SalesOrderId)
+    [DataLoader]
+    public static async Task<Dictionary<Guid, Shipment>> GetShipmentByIdAsync(
+        IReadOnlyList<Guid> ids,
+        QueryContext<Shipment> query,
+        SalesDbContext context,
+        CancellationToken cancellationToken)
+        => await context.Shipments
+            .AsNoTracking()
+            .Where(s => ids.Contains(s.Id))
+            .With(query.Include(s => s.Id))
+            .ToDictionaryAsync(s => s.Id, cancellationToken);
+
+    [DataLoader]
+    public static async Task<Dictionary<Guid, List<SalesOrderLine>>> GetOrderLinesByOrderIdAsync(
+        IReadOnlyList<Guid> orderIds,
+        QueryContext<SalesOrderLine> query,
+        SalesDbContext context,
+        CancellationToken cancellationToken)
+        => (await context.SalesOrderLines
+            .AsNoTracking()
+            .Where(l => orderIds.Contains(l.SalesOrderId))
+            .With(query.Include(l => l.SalesOrderId))
+            .ToListAsync(cancellationToken))
+            .GroupBy(l => l.SalesOrderId)
             .ToDictionary(g => g.Key, g => g.ToList());
-    }
 }

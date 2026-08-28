@@ -1,66 +1,84 @@
+using ChatWithYourData.InventoryService.API.GraphQL.Errors;
 using ChatWithYourData.InventoryService.Application.Features.Products.Commands;
-using ChatWithYourData.InventoryService.Application.Features.Products.DTOs;
+using ChatWithYourData.InventoryService.Domain.Entities;
 using ChatWithYourData.InventoryService.Domain.Enums;
-using HotChocolate;
 using HotChocolate.Types;
 using MediatR;
 
 namespace ChatWithYourData.InventoryService.API.GraphQL.Mutations;
 
-public record CreateProductInput(
-    string Sku,
-    string Name,
-    string Description,
-    decimal UnitPrice,
-    string UnitOfMeasure,
-    Guid CategoryId
-);
-
-public record AdjustStockInput(
-    Guid ProductId,
-    Guid WarehouseId,
-    int QuantityDelta,
-    AdjustmentReason Reason,
-    string Notes
-);
-
-public record MutationPayload<T>(bool Success, T? Data, string? Error);
-
-[GraphQLName("Mutation")]
-public class InventoryMutations
+[MutationType]
+internal static partial class InventoryMutations
 {
-    public async Task<MutationPayload<ProductDto>> CreateProductAsync(
-        CreateProductInput input,
-        [Service] IMediator mediator,
+    [Error(typeof(DuplicateSkuException))]
+    public static async Task<Product> CreateProductAsync(
+        string sku,
+        string name,
+        string description,
+        decimal unitPrice,
+        string unitOfMeasure,
+        Guid categoryId,
+        IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var command = new CreateProductCommand(
-            input.Sku,
-            input.Name,
-            input.Description,
-            input.UnitPrice,
-            input.UnitOfMeasure,
-            input.CategoryId
-        );
-
+        var command = new CreateProductCommand(sku, name, description, unitPrice, unitOfMeasure, categoryId);
         var result = await mediator.Send(command, cancellationToken);
-        return new MutationPayload<ProductDto>(result.IsSuccess, result.Value, result.Error);
+
+        if (!result.IsSuccess)
+            throw new DuplicateSkuException(sku);
+
+        return new Product
+        {
+            Id = result.Value!.Id,
+            Sku = result.Value.Sku,
+            Name = result.Value.Name,
+            Description = result.Value.Description,
+            UnitPrice = result.Value.UnitPrice,
+            UnitOfMeasure = result.Value.UnitOfMeasure,
+            IsActive = result.Value.IsActive,
+            CategoryId = result.Value.CategoryId,
+            CreatedAtUtc = result.Value.CreatedAtUtc
+        };
     }
 
-    public async Task<MutationPayload<StockItemDto>> AdjustStockAsync(
-        AdjustStockInput input,
-        [Service] IMediator mediator,
+    [Error(typeof(ProductNotFoundException))]
+    [Error(typeof(WarehouseNotFoundException))]
+    [Error(typeof(InsufficientStockException))]
+    [Error(typeof(UninitializedStockException))]
+    public static async Task<StockItem> AdjustStockAsync(
+        Guid productId,
+        Guid warehouseId,
+        int quantityDelta,
+        AdjustmentReason reason,
+        string notes,
+        IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var command = new AdjustStockCommand(
-            input.ProductId,
-            input.WarehouseId,
-            input.QuantityDelta,
-            input.Reason,
-            input.Notes
-        );
-
+        var command = new AdjustStockCommand(productId, warehouseId, quantityDelta, reason, notes);
         var result = await mediator.Send(command, cancellationToken);
-        return new MutationPayload<StockItemDto>(result.IsSuccess, result.Value, result.Error);
+
+        if (!result.IsSuccess)
+        {
+            var error = result.Error!;
+            if (error.Contains("Product"))
+                throw new ProductNotFoundException(productId);
+            if (error.Contains("Warehouse"))
+                throw new WarehouseNotFoundException(warehouseId);
+            if (error.Contains("Insufficient"))
+                throw new InsufficientStockException(0, quantityDelta);
+            if (error.Contains("uninitialized"))
+                throw new UninitializedStockException(productId, warehouseId);
+            throw new InvalidOperationException(error);
+        }
+
+        return new StockItem
+        {
+            Id = result.Value!.Id,
+            ProductId = result.Value.ProductId,
+            WarehouseId = result.Value.WarehouseId,
+            QuantityOnHand = result.Value.QuantityOnHand,
+            QuantityReserved = result.Value.QuantityReserved,
+            ReorderPoint = result.Value.ReorderPoint
+        };
     }
 }

@@ -1,63 +1,78 @@
 using ChatWithYourData.InventoryService.API.GraphQL.DataLoaders;
 using ChatWithYourData.InventoryService.Domain.Entities;
+using GreenDonut.Data;
 using HotChocolate.Types;
 
 namespace ChatWithYourData.InventoryService.API.GraphQL.Types;
 
-public class ProductType : ObjectType<Product>
+[ObjectType<Product>]
+internal static partial class ProductNode
 {
-    protected override void Configure(IObjectTypeDescriptor<Product> descriptor)
-    {
-        descriptor.Description("Represents a product within the inventory catalog.");
+    [BindMember(nameof(Product.CategoryId))]
+    public static async Task<Category?> GetCategoryAsync(
+        [Parent(requires: nameof(Product.CategoryId))] Product product,
+        QueryContext<Category> query,
+        CategoryByIdDataLoader categoryById,
+        CancellationToken cancellationToken)
+        => await categoryById.With(query).LoadAsync(product.CategoryId, cancellationToken);
 
-        descriptor.Field(p => p.Category)
-            .ResolveWith<ProductResolvers>(r => r.GetCategoryAsync(default!, default!, default!))
-            .Description("The category the product belongs to (resolved via DataLoader).");
-    }
+    public static async Task<List<StockItem>> GetStockItemsAsync(
+        [Parent(requires: nameof(Product.Id))] Product product,
+        QueryContext<StockItem> query,
+        StockItemsByProductIdDataLoader stockItemsByProductId,
+        CancellationToken cancellationToken)
+        => await stockItemsByProductId.With(query).LoadAsync(product.Id, cancellationToken) ?? [];
 
-    private class ProductResolvers
+    static partial void Configure(IObjectTypeDescriptor<Product> descriptor)
     {
-        public async Task<Category?> GetCategoryAsync(
-            [Parent] Product product,
-            CategoryByIdDataLoader dataLoader,
-            CancellationToken cancellationToken)
-        {
-            return await dataLoader.LoadAsync(product.CategoryId, cancellationToken);
-        }
+        descriptor.Ignore(p => p.Category);
+        descriptor.Ignore(p => p.StockItems);
+        descriptor.Ignore(p => p.StockAdjustments);
     }
 }
 
-public class StockItemType : ObjectType<StockItem>
+[ObjectType<StockItem>]
+internal static partial class StockItemNode
 {
-    protected override void Configure(IObjectTypeDescriptor<StockItem> descriptor)
+    [BindMember(nameof(StockItem.ProductId))]
+    public static async Task<Product?> GetProductAsync(
+        [Parent(requires: nameof(StockItem.ProductId))] StockItem stockItem,
+        QueryContext<Product> query,
+        ProductByIdDataLoader productById,
+        CancellationToken cancellationToken)
+        => await productById.With(query).LoadAsync(stockItem.ProductId, cancellationToken);
+
+    [BindMember(nameof(StockItem.WarehouseId))]
+    public static async Task<Warehouse?> GetWarehouseAsync(
+        [Parent(requires: nameof(StockItem.WarehouseId))] StockItem stockItem,
+        QueryContext<Warehouse> query,
+        WarehouseByIdDataLoader warehouseById,
+        CancellationToken cancellationToken)
+        => await warehouseById.With(query).LoadAsync(stockItem.WarehouseId, cancellationToken);
+
+    static partial void Configure(IObjectTypeDescriptor<StockItem> descriptor)
     {
-        descriptor.Description("Represents stock level for a product in a warehouse.");
-
-        descriptor.Field(s => s.Product)
-            .ResolveWith<StockItemResolvers>(r => r.GetProductAsync(default!, default!, default!))
-            .Description("The product associated with this stock item (resolved via DataLoader).");
-
-        descriptor.Field(s => s.Warehouse)
-            .ResolveWith<StockItemResolvers>(r => r.GetWarehouseAsync(default!, default!, default!))
-            .Description("The warehouse storing this stock item (resolved via DataLoader).");
+        descriptor.Ignore(s => s.Product);
+        descriptor.Ignore(s => s.Warehouse);
     }
+}
 
-    private class StockItemResolvers
+[ObjectType<Category>]
+internal static partial class CategoryNode
+{
+    static partial void Configure(IObjectTypeDescriptor<Category> descriptor)
     {
-        public async Task<Product?> GetProductAsync(
-            [Parent] StockItem stockItem,
-            ProductByIdDataLoader dataLoader,
-            CancellationToken cancellationToken)
-        {
-            return await dataLoader.LoadAsync(stockItem.ProductId, cancellationToken);
-        }
+        descriptor.Ignore(c => c.ParentCategory);
+        descriptor.Ignore(c => c.SubCategories);
+        descriptor.Ignore(c => c.Products);
+    }
+}
 
-        public async Task<Warehouse?> GetWarehouseAsync(
-            [Parent] StockItem stockItem,
-            WarehouseByIdDataLoader dataLoader,
-            CancellationToken cancellationToken)
-        {
-            return await dataLoader.LoadAsync(stockItem.WarehouseId, cancellationToken);
-        }
+[ObjectType<Warehouse>]
+internal static partial class WarehouseNode
+{
+    static partial void Configure(IObjectTypeDescriptor<Warehouse> descriptor)
+    {
+        descriptor.Ignore(w => w.StockItems);
     }
 }

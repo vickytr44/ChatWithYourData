@@ -1,7 +1,4 @@
-using ChatWithYourData.SalesService.API.GraphQL.DataLoaders;
-using ChatWithYourData.SalesService.API.GraphQL.Mutations;
-using ChatWithYourData.SalesService.API.GraphQL.Queries;
-using ChatWithYourData.SalesService.API.GraphQL.Types;
+using ChatWithYourData.SalesService.API.GraphQL;
 using ChatWithYourData.SalesService.Application.Features.Sales.Commands;
 using ChatWithYourData.SalesService.Infrastructure;
 using ChatWithYourData.SalesService.Infrastructure.Persistence;
@@ -22,19 +19,19 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreateCustomerCommandValidator
 // Infrastructure Services
 builder.Services.AddSalesInfrastructure(builder.Configuration);
 
-// Register DataLoaders
-builder.Services.AddScoped<CustomerByIdDataLoader>();
-builder.Services.AddScoped<OrderLinesByOrderIdDataLoader>();
-
-// GraphQL Configuration with Projections, Filtering, Sorting, and DataLoaders
+// GraphQL Configuration — subgraph with source-generated types
 builder.Services
-    .AddGraphQLServer()
-    .AddQueryType<SalesQueries>()
-    .AddMutationType<SalesMutations>()
-    .AddType<SalesOrderType>()
-    .AddType<SalesOrderLineType>()
-    .AddType<ProductType>()
-    .AddProjections()
+    .AddGraphQLServer("sales-api")
+    .AddSourceSchemaDefaults()
+    .AddDefaultSettings()
+    .ModifyPagingOptions(o =>
+    {
+        o.DefaultPageSize = 25;
+        o.MaxPageSize = 150;
+        o.IncludeTotalCount = true;
+        o.NullOrdering = GreenDonut.Data.NullOrdering.NativeNullsLast;
+    })
+    .AddSalesTypes()
     .AddFiltering()
     .AddSorting();
 

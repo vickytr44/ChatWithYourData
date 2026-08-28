@@ -1,7 +1,4 @@
-using ChatWithYourData.InventoryService.API.GraphQL.DataLoaders;
-using ChatWithYourData.InventoryService.API.GraphQL.Mutations;
-using ChatWithYourData.InventoryService.API.GraphQL.Queries;
-using ChatWithYourData.InventoryService.API.GraphQL.Types;
+using ChatWithYourData.InventoryService.API.GraphQL;
 using ChatWithYourData.InventoryService.Application.Features.Products.Commands;
 using ChatWithYourData.InventoryService.Infrastructure;
 using ChatWithYourData.InventoryService.Infrastructure.Persistence;
@@ -22,19 +19,19 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreateProductCommandValidator)
 // Infrastructure Services
 builder.Services.AddInventoryInfrastructure(builder.Configuration);
 
-// Register DataLoaders
-builder.Services.AddScoped<CategoryByIdDataLoader>();
-builder.Services.AddScoped<WarehouseByIdDataLoader>();
-builder.Services.AddScoped<ProductByIdDataLoader>();
-
-// GraphQL Configuration with Projections, Filtering, Sorting, and DataLoaders
+// GraphQL Configuration — subgraph with source-generated types
 builder.Services
-    .AddGraphQLServer()
-    .AddQueryType<InventoryQueries>()
-    .AddMutationType<InventoryMutations>()
-    .AddType<ProductType>()
-    .AddType<StockItemType>()
-    .AddProjections()
+    .AddGraphQLServer("inventory-api")
+    .AddSourceSchemaDefaults()
+    .AddDefaultSettings()
+    .ModifyPagingOptions(o =>
+    {
+        o.DefaultPageSize = 25;
+        o.MaxPageSize = 150;
+        o.IncludeTotalCount = true;
+        o.NullOrdering = GreenDonut.Data.NullOrdering.NativeNullsLast;
+    })
+    .AddInventoryTypes()
     .AddFiltering()
     .AddSorting();
 

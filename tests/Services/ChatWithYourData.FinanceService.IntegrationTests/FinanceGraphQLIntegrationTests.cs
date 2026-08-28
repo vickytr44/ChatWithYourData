@@ -65,4 +65,39 @@ public class FinanceGraphQLIntegrationTests : IClassFixture<WebApplicationFactor
         jsonResponse.Should().Contain("INV-00001");
         jsonResponse.Should().Contain("PAY-00001");
     }
+
+    [Fact]
+    public async Task PaymentsQuery_ReturnsInvoiceWithCustomerStub()
+    {
+        // Arrange
+        var requestBody = new
+        {
+            query = @"
+            {
+              payments {
+                nodes {
+                  paymentNumber
+                  invoice {
+                    invoiceNumber
+                    customer {
+                      id
+                    }
+                  }
+                }
+              }
+            }"
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/graphql", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var jsonResponse = await response.Content.ReadAsStringAsync();
+        jsonResponse.Should().NotContain("\"errors\":");
+        jsonResponse.Should().Contain("PAY-00001");
+        jsonResponse.Should().Contain("customer");
+    }
 }

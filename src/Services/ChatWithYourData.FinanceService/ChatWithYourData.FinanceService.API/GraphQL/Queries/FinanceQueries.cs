@@ -1,68 +1,102 @@
 using ChatWithYourData.FinanceService.API.GraphQL.DataLoaders;
 using ChatWithYourData.FinanceService.Domain.Entities;
 using ChatWithYourData.FinanceService.Infrastructure.Persistence;
+using GreenDonut.Data;
 using HotChocolate.Data;
 using HotChocolate.Types;
+using HotChocolate.Types.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace ChatWithYourData.FinanceService.API.GraphQL.Queries;
 
-[GraphQLName("Query")]
-public class FinanceQueries
+[QueryType]
+internal static partial class FinanceQueries
 {
-    [UsePaging]
-    [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<Account> GetAccounts(FinanceDbContext dbContext)
-    {
-        return dbContext.Accounts.AsNoTracking();
-    }
-
-    [UseProjection]
-    [Lookup]
-    public async Task<Account?> GetAccountByIdAsync(
-        Guid id,
-        AccountByIdDataLoader dataLoader,
-        CancellationToken cancellationToken)
-    {
-        return await dataLoader.LoadAsync(id, cancellationToken);
-    }
-
-    [UseProjection]
-    [Lookup]
-    public async Task<Invoice?> GetInvoiceByIdAsync(
-        Guid id,
+    public static async Task<PageConnection<Account>> GetAccountsAsync(
+        PagingArguments pagingArguments,
+        QueryContext<Account> query,
         FinanceDbContext dbContext,
         CancellationToken cancellationToken)
-    {
-        return await dbContext.Invoices.AsNoTracking().FirstOrDefaultAsync(i => i.Id == id, cancellationToken);
-    }
+        => await dbContext.Accounts
+            .AsNoTracking()
+            .OrderBy(a => a.AccountCode)
+            .ThenBy(a => a.Id)
+            .With(query)
+            .ToPageAsync(pagingArguments, cancellationToken);
 
-    [UsePaging]
-    [UseProjection]
+    [Lookup]
+    public static async Task<Account?> GetAccountByIdAsync(
+        Guid id,
+        QueryContext<Account> query,
+        AccountByIdDataLoader accountById,
+        CancellationToken cancellationToken)
+        => await accountById.With(query).LoadAsync(id, cancellationToken);
+
+    [Lookup]
+    public static async Task<Invoice?> GetInvoiceByIdAsync(
+        Guid id,
+        QueryContext<Invoice> query,
+        InvoiceByIdDataLoader invoiceById,
+        CancellationToken cancellationToken)
+        => await invoiceById.With(query).LoadAsync(id, cancellationToken);
+
     [UseFiltering]
     [UseSorting]
-    public IQueryable<JournalEntry> GetJournalEntries(FinanceDbContext dbContext)
-    {
-        return dbContext.JournalEntries.AsNoTracking();
-    }
+    public static async Task<PageConnection<JournalEntry>> GetJournalEntriesAsync(
+        PagingArguments pagingArguments,
+        QueryContext<JournalEntry> query,
+        FinanceDbContext dbContext,
+        CancellationToken cancellationToken)
+        => await dbContext.JournalEntries
+            .AsNoTracking()
+            .OrderByDescending(j => j.EntryDateUtc)
+            .ThenBy(j => j.Id)
+            .With(query)
+            .ToPageAsync(pagingArguments, cancellationToken);
 
-    [UsePaging]
-    [UseProjection]
+    [Lookup]
+    public static async Task<JournalEntry?> GetJournalEntryByIdAsync(
+        Guid id,
+        QueryContext<JournalEntry> query,
+        JournalEntryByIdDataLoader journalEntryById,
+        CancellationToken cancellationToken)
+        => await journalEntryById.With(query).LoadAsync(id, cancellationToken);
+
     [UseFiltering]
     [UseSorting]
-    public IQueryable<Invoice> GetInvoices(FinanceDbContext dbContext)
-    {
-        return dbContext.Invoices.AsNoTracking();
-    }
+    public static async Task<PageConnection<Invoice>> GetInvoicesAsync(
+        PagingArguments pagingArguments,
+        QueryContext<Invoice> query,
+        FinanceDbContext dbContext,
+        CancellationToken cancellationToken)
+        => await dbContext.Invoices
+            .AsNoTracking()
+            .OrderByDescending(i => i.IssueDateUtc)
+            .ThenBy(i => i.Id)
+            .With(query)
+            .ToPageAsync(pagingArguments, cancellationToken);
 
-    [UsePaging]
-    [UseProjection]
     [UseFiltering]
     [UseSorting]
-    public IQueryable<Payment> GetPayments(FinanceDbContext dbContext)
-    {
-        return dbContext.Payments.AsNoTracking();
-    }
+    public static async Task<PageConnection<Payment>> GetPaymentsAsync(
+        PagingArguments pagingArguments,
+        QueryContext<Payment> query,
+        FinanceDbContext dbContext,
+        CancellationToken cancellationToken)
+        => await dbContext.Payments
+            .AsNoTracking()
+            .OrderByDescending(p => p.PaymentDateUtc)
+            .ThenBy(p => p.Id)
+            .With(query)
+            .ToPageAsync(pagingArguments, cancellationToken);
+
+    [Lookup]
+    public static async Task<Payment?> GetPaymentByIdAsync(
+        Guid id,
+        QueryContext<Payment> query,
+        PaymentByIdDataLoader paymentById,
+        CancellationToken cancellationToken)
+        => await paymentById.With(query).LoadAsync(id, cancellationToken);
 }

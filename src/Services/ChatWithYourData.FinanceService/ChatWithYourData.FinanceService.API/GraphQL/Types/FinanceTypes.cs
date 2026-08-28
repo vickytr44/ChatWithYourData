@@ -1,74 +1,104 @@
+
 using ChatWithYourData.FinanceService.API.GraphQL.DataLoaders;
 using ChatWithYourData.FinanceService.Domain.Entities;
+using GreenDonut.Data;
+using HotChocolate;
 using HotChocolate.Types;
 
 namespace ChatWithYourData.FinanceService.API.GraphQL.Types;
 
-public class JournalEntryType : ObjectType<JournalEntry>
-{
-    protected override void Configure(IObjectTypeDescriptor<JournalEntry> descriptor)
-    {
-        descriptor.Description("Represents a posted or draft journal entry in the general ledger.");
-
-        descriptor.Field(j => j.Lines)
-            .ResolveWith<JournalEntryResolvers>(r => r.GetLinesAsync(default!, default!, default!))
-            .Description("The debit and credit lines for this entry (resolved via DataLoader).");
-    }
-
-    private class JournalEntryResolvers
-    {
-        public async Task<List<JournalLine>> GetLinesAsync(
-            [Parent] JournalEntry entry,
-            JournalLinesByEntryIdDataLoader dataLoader,
-            CancellationToken cancellationToken)
-        {
-            var lines = await dataLoader.LoadAsync(entry.Id, cancellationToken);
-            return lines ?? new List<JournalLine>();
-        }
-    }
-}
-
-public class InvoiceType : ObjectType<Invoice>
-{
-    protected override void Configure(IObjectTypeDescriptor<Invoice> descriptor)
-    {
-        descriptor.Description("Represents a customer invoice.");
-
-        descriptor.Field(i => i.Payments)
-            .ResolveWith<InvoiceResolvers>(r => r.GetPaymentsAsync(default!, default!, default!))
-            .Description("The payments applied to this invoice (resolved via DataLoader).");
-
-        descriptor.Field("customer")
-            .Type<CustomerType>()
-            .Resolve(ctx => ctx.Parent<Invoice>().CustomerId.HasValue
-                ? new Customer { Id = ctx.Parent<Invoice>().CustomerId!.Value }
-                : null)
-            .Description("The customer associated with this invoice (stitched from SalesService).");
-    }
-
-    private class InvoiceResolvers
-    {
-        public async Task<List<Payment>> GetPaymentsAsync(
-            [Parent] Invoice invoice,
-            PaymentsByInvoiceIdDataLoader dataLoader,
-            CancellationToken cancellationToken)
-        {
-            var payments = await dataLoader.LoadAsync(invoice.Id, cancellationToken);
-            return payments ?? new List<Payment>();
-        }
-    }
-}
-
-public class Customer
+[GraphQLName("Customer")]
+public class CustomerEntityStub
 {
     public Guid Id { get; set; }
 }
 
-public class CustomerType : ObjectType<Customer>
+[ObjectType<CustomerEntityStub>]
+internal static partial class CustomerEntityStubNode
 {
-    protected override void Configure(IObjectTypeDescriptor<Customer> descriptor)
+    static partial void Configure(IObjectTypeDescriptor<CustomerEntityStub> descriptor)
     {
-        descriptor.Name("Customer");
-        descriptor.Field(c => c.Id);
+        descriptor.Field(c => c.Id).Type<NonNullType<IdType>>();
+    }
+}
+
+[ObjectType<JournalEntry>]
+internal static partial class JournalEntryNode
+{
+    public static async Task<List<JournalLine>> GetLinesAsync(
+        [Parent(requires: nameof(JournalEntry.Id))] JournalEntry entry,
+        QueryContext<JournalLine> query,
+        JournalLinesByEntryIdDataLoader journalLinesByEntryId,
+        CancellationToken cancellationToken)
+        => await journalLinesByEntryId.With(query).LoadAsync(entry.Id, cancellationToken) ?? [];
+
+    static partial void Configure(IObjectTypeDescriptor<JournalEntry> descriptor)
+    {
+        descriptor.Ignore(j => j.Lines);
+    }
+}
+
+[ObjectType<Invoice>]
+internal static partial class InvoiceNode
+{
+    [BindMember(nameof(Invoice.CustomerId))]
+    public static CustomerEntityStub? GetCustomer(
+        [Parent(requires: nameof(Invoice.CustomerId))] Invoice invoice)
+        => invoice.CustomerId.HasValue ? new CustomerEntityStub { Id = invoice.CustomerId.Value } : null;
+
+    public static async Task<List<Payment>> GetPaymentsAsync(
+        [Parent(requires: nameof(Invoice.Id))] Invoice invoice,
+        QueryContext<Payment> query,
+        PaymentsByInvoiceIdDataLoader paymentsByInvoiceId,
+        CancellationToken cancellationToken)
+        => await paymentsByInvoiceId.With(query).LoadAsync(invoice.Id, cancellationToken) ?? [];
+
+    static partial void Configure(IObjectTypeDescriptor<Invoice> descriptor)
+    {
+        descriptor.Ignore(i => i.Payments);
+    }
+}
+
+[ObjectType<Account>]
+internal static partial class AccountNode
+{
+    static partial void Configure(IObjectTypeDescriptor<Account> descriptor)
+    {
+        descriptor.Ignore(a => a.JournalLines);
+    }
+}
+
+[ObjectType<JournalLine>]
+internal static partial class JournalLineNode
+{
+    [BindMember(nameof(JournalLine.AccountId))]
+    public static async Task<Account?> GetAccountAsync(
+        [Parent(requires: nameof(JournalLine.AccountId))] JournalLine line,
+        QueryContext<Account> query,
+        AccountByIdDataLoader accountById,
+        CancellationToken cancellationToken)
+        => await accountById.With(query).LoadAsync(line.AccountId, cancellationToken);
+
+    static partial void Configure(IObjectTypeDescriptor<JournalLine> descriptor)
+    {
+        descriptor.Ignore(l => l.JournalEntry);
+        descriptor.Ignore(l => l.Account);
+    }
+}
+
+[ObjectType<Payment>]
+internal static partial class PaymentNode
+{
+    [BindMember(nameof(Payment.InvoiceId))]
+    public static async Task<Invoice?> GetInvoiceAsync(
+        [Parent(requires: nameof(Payment.InvoiceId))] Payment payment,
+        QueryContext<Invoice> query,
+        InvoiceByIdDataLoader invoiceById,
+        CancellationToken cancellationToken)
+        => await invoiceById.With(query).LoadAsync(payment.InvoiceId, cancellationToken);
+
+    static partial void Configure(IObjectTypeDescriptor<Payment> descriptor)
+    {
+        descriptor.Ignore(p => p.Invoice);
     }
 }

@@ -1,7 +1,4 @@
-using ChatWithYourData.FinanceService.API.GraphQL.DataLoaders;
-using ChatWithYourData.FinanceService.API.GraphQL.Mutations;
-using ChatWithYourData.FinanceService.API.GraphQL.Queries;
-using ChatWithYourData.FinanceService.API.GraphQL.Types;
+using ChatWithYourData.FinanceService.API.GraphQL;
 using ChatWithYourData.FinanceService.Application.Features.Finance.Commands;
 using ChatWithYourData.FinanceService.Infrastructure;
 using ChatWithYourData.FinanceService.Infrastructure.Persistence;
@@ -22,20 +19,19 @@ builder.Services.AddValidatorsFromAssembly(typeof(CreateAccountCommandValidator)
 // Infrastructure Services
 builder.Services.AddFinanceInfrastructure(builder.Configuration);
 
-// Register DataLoaders
-builder.Services.AddScoped<AccountByIdDataLoader>();
-builder.Services.AddScoped<JournalLinesByEntryIdDataLoader>();
-builder.Services.AddScoped<PaymentsByInvoiceIdDataLoader>();
-
-// GraphQL Configuration with Projections, Filtering, Sorting, and DataLoaders
+// GraphQL Configuration — subgraph with source-generated types
 builder.Services
-    .AddGraphQLServer()
-    .AddQueryType<FinanceQueries>()
-    .AddMutationType<FinanceMutations>()
-    .AddType<JournalEntryType>()
-    .AddType<InvoiceType>()
-    .AddType<CustomerType>()
-    .AddProjections()
+    .AddGraphQLServer("finance-api")
+    .AddSourceSchemaDefaults()
+    .AddDefaultSettings()
+    .ModifyPagingOptions(o =>
+    {
+        o.DefaultPageSize = 25;
+        o.MaxPageSize = 150;
+        o.IncludeTotalCount = true;
+        o.NullOrdering = GreenDonut.Data.NullOrdering.NativeNullsLast;
+    })
+    .AddFinanceTypes()
     .AddFiltering()
     .AddSorting();
 

@@ -72,6 +72,8 @@ ChatWithYourData/
 - **Validation**: FluentValidation for request validation via Application pipeline behaviors.
 - **Error Handling**: Use Result pattern or centralized exception-handling middleware (ProblemDetails / RFC 7807).
 - **Database per Service**: Independent DbContext and SQLite database file per microservice.
+- **Test-Driven Bug Fixing**: Whenever fixing a bug or schema defect, ALWAYS write or update an automated unit or integration test reproducing the failure before/with the fix.
+
 
 ---
 

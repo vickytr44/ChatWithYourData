@@ -1,61 +1,69 @@
+using ChatWithYourData.SalesService.API.GraphQL.Errors;
 using ChatWithYourData.SalesService.Application.Features.Sales.Commands;
 using ChatWithYourData.SalesService.Application.Features.Sales.DTOs;
-using HotChocolate;
+using ChatWithYourData.SalesService.Domain.Entities;
 using HotChocolate.Types;
 using MediatR;
 
 namespace ChatWithYourData.SalesService.API.GraphQL.Mutations;
 
-public record CreateCustomerInput(
-    string Name,
-    string Email,
-    string Phone,
-    string BillingAddress,
-    string ShippingAddress,
-    decimal CreditLimit
-);
-
-public record CreateSalesOrderInput(
-    Guid CustomerId,
-    string Notes,
-    List<CreateSalesOrderLineInput> Lines
-);
-
-public record SalesMutationPayload<T>(bool Success, T? Data, string? Error);
-
-[GraphQLName("Mutation")]
-public class SalesMutations
+[MutationType]
+internal static partial class SalesMutations
 {
-    public async Task<SalesMutationPayload<CustomerDto>> CreateCustomerAsync(
-        CreateCustomerInput input,
-        [Service] IMediator mediator,
+    [Error(typeof(CustomerNumberAlreadyExistsException))]
+    public static async Task<Customer> CreateCustomerAsync(
+        string name,
+        string email,
+        string phone,
+        string billingAddress,
+        string shippingAddress,
+        decimal creditLimit,
+        IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var command = new CreateCustomerCommand(
-            input.Name,
-            input.Email,
-            input.Phone,
-            input.BillingAddress,
-            input.ShippingAddress,
-            input.CreditLimit
-        );
-
+        var command = new CreateCustomerCommand(name, email, phone, billingAddress, shippingAddress, creditLimit);
         var result = await mediator.Send(command, cancellationToken);
-        return new SalesMutationPayload<CustomerDto>(result.IsSuccess, result.Value, result.Error);
+
+        if (!result.IsSuccess)
+            throw new CustomerNumberAlreadyExistsException(result.Error!);
+
+        return new Customer
+        {
+            Id = result.Value!.Id,
+            CustomerNumber = result.Value.CustomerNumber,
+            Name = result.Value.Name,
+            Email = result.Value.Email,
+            Phone = result.Value.Phone,
+            BillingAddress = result.Value.BillingAddress,
+            ShippingAddress = result.Value.ShippingAddress,
+            CreditLimit = result.Value.CreditLimit,
+            IsActive = result.Value.IsActive
+        };
     }
 
-    public async Task<SalesMutationPayload<SalesOrderDto>> CreateSalesOrderAsync(
-        CreateSalesOrderInput input,
-        [Service] IMediator mediator,
+    [Error(typeof(CustomerNotFoundException))]
+    public static async Task<SalesOrder> CreateSalesOrderAsync(
+        Guid customerId,
+        string notes,
+        List<CreateSalesOrderLineInput> lines,
+        IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var command = new CreateSalesOrderCommand(
-            input.CustomerId,
-            input.Notes,
-            input.Lines
-        );
-
+        var command = new CreateSalesOrderCommand(customerId, notes, lines);
         var result = await mediator.Send(command, cancellationToken);
-        return new SalesMutationPayload<SalesOrderDto>(result.IsSuccess, result.Value, result.Error);
+
+        if (!result.IsSuccess)
+            throw new CustomerNotFoundException(customerId);
+
+        return new SalesOrder
+        {
+            Id = result.Value!.Id,
+            OrderNumber = result.Value.OrderNumber,
+            CustomerId = result.Value.CustomerId,
+            OrderDateUtc = result.Value.OrderDateUtc,
+            Status = result.Value.Status,
+            TotalAmount = result.Value.TotalAmount,
+            Notes = result.Value.Notes
+        };
     }
 }

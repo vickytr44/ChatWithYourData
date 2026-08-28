@@ -1,71 +1,88 @@
 using ChatWithYourData.ProcurementService.API.GraphQL.DataLoaders;
 using ChatWithYourData.ProcurementService.Domain.Entities;
+using GreenDonut.Data;
+using HotChocolate;
 using HotChocolate.Types;
 
 namespace ChatWithYourData.ProcurementService.API.GraphQL.Types;
 
-public class PurchaseOrderType : ObjectType<PurchaseOrder>
-{
-    protected override void Configure(IObjectTypeDescriptor<PurchaseOrder> descriptor)
-    {
-        descriptor.Description("Represents a purchase order issued to a vendor.");
-
-        descriptor.Field(p => p.VendorId)
-            .IsProjected(true);
-
-        descriptor.Field(p => p.Vendor)
-            .ResolveWith<PurchaseOrderResolvers>(r => r.GetVendorAsync(default!, default!, default!))
-            .Description("The vendor for this purchase order (resolved via DataLoader).");
-
-        descriptor.Field(p => p.Lines)
-            .ResolveWith<PurchaseOrderResolvers>(r => r.GetLinesAsync(default!, default!, default!))
-            .Description("The line items for this purchase order (resolved via DataLoader).");
-    }
-
-    private class PurchaseOrderResolvers
-    {
-        public async Task<Vendor?> GetVendorAsync(
-            [Parent] PurchaseOrder po,
-            VendorByIdDataLoader dataLoader,
-            CancellationToken cancellationToken)
-        {
-            return await dataLoader.LoadAsync(po.VendorId, cancellationToken);
-        }
-
-        public async Task<List<PurchaseOrderLine>> GetLinesAsync(
-            [Parent] PurchaseOrder po,
-            PoLinesByPoIdDataLoader dataLoader,
-            CancellationToken cancellationToken)
-        {
-            var lines = await dataLoader.LoadAsync(po.Id, cancellationToken);
-            return lines ?? new List<PurchaseOrderLine>();
-        }
-    }
-}
-
-public class Product
+[GraphQLName("Product")]
+public class ProductEntityStub
 {
     public Guid Id { get; set; }
 }
 
-public class ProductType : ObjectType<Product>
+[ObjectType<ProductEntityStub>]
+internal static partial class ProductEntityStubNode
 {
-    protected override void Configure(IObjectTypeDescriptor<Product> descriptor)
+    static partial void Configure(IObjectTypeDescriptor<ProductEntityStub> descriptor)
     {
-        descriptor.Name("Product");
-        descriptor.Field(p => p.Id);
+        descriptor.Field(p => p.Id).Type<NonNullType<IdType>>();
     }
 }
 
-public class PurchaseOrderLineType : ObjectType<PurchaseOrderLine>
+[ObjectType<PurchaseOrder>]
+internal static partial class PurchaseOrderNode
 {
-    protected override void Configure(IObjectTypeDescriptor<PurchaseOrderLine> descriptor)
-    {
-        descriptor.Description("Represents a line item in a purchase order.");
+    [BindMember(nameof(PurchaseOrder.VendorId))]
+    public static async Task<Vendor?> GetVendorAsync(
+        [Parent(requires: nameof(PurchaseOrder.VendorId))] PurchaseOrder po,
+        QueryContext<Vendor> query,
+        VendorByIdDataLoader vendorById,
+        CancellationToken cancellationToken)
+        => await vendorById.With(query).LoadAsync(po.VendorId, cancellationToken);
 
-        descriptor.Field("product")
-            .Type<ProductType>()
-            .Resolve(ctx => new Product { Id = ctx.Parent<PurchaseOrderLine>().ProductId })
-            .Description("The product associated with this purchase order line (stitched from InventoryService).");
+    public static async Task<List<PurchaseOrderLine>> GetLinesAsync(
+        [Parent(requires: nameof(PurchaseOrder.Id))] PurchaseOrder po,
+        QueryContext<PurchaseOrderLine> query,
+        PoLinesByPoIdDataLoader poLinesByPoId,
+        CancellationToken cancellationToken)
+        => await poLinesByPoId.With(query).LoadAsync(po.Id, cancellationToken) ?? [];
+
+    static partial void Configure(IObjectTypeDescriptor<PurchaseOrder> descriptor)
+    {
+        descriptor.Ignore(p => p.Vendor);
+        descriptor.Ignore(p => p.Lines);
+        descriptor.Ignore(p => p.GoodsReceipts);
+    }
+}
+
+[ObjectType<Vendor>]
+internal static partial class VendorNode
+{
+    static partial void Configure(IObjectTypeDescriptor<Vendor> descriptor)
+    {
+        descriptor.Ignore(v => v.PurchaseOrders);
+    }
+}
+
+[ObjectType<PurchaseOrderLine>]
+internal static partial class PurchaseOrderLineNode
+{
+    [BindMember(nameof(PurchaseOrderLine.ProductId))]
+    public static ProductEntityStub GetProduct(
+        [Parent(requires: nameof(PurchaseOrderLine.ProductId))] PurchaseOrderLine line)
+        => new ProductEntityStub { Id = line.ProductId };
+
+    static partial void Configure(IObjectTypeDescriptor<PurchaseOrderLine> descriptor)
+    {
+        descriptor.Ignore(l => l.PurchaseOrder);
+    }
+}
+
+[ObjectType<GoodsReceipt>]
+internal static partial class GoodsReceiptNode
+{
+    [BindMember(nameof(GoodsReceipt.PurchaseOrderId))]
+    public static async Task<PurchaseOrder?> GetPurchaseOrderAsync(
+        [Parent(requires: nameof(GoodsReceipt.PurchaseOrderId))] GoodsReceipt receipt,
+        QueryContext<PurchaseOrder> query,
+        PurchaseOrderByIdDataLoader purchaseOrderById,
+        CancellationToken cancellationToken)
+        => await purchaseOrderById.With(query).LoadAsync(receipt.PurchaseOrderId, cancellationToken);
+
+    static partial void Configure(IObjectTypeDescriptor<GoodsReceipt> descriptor)
+    {
+        descriptor.Ignore(g => g.PurchaseOrder);
     }
 }
