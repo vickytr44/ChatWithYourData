@@ -1,0 +1,42 @@
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Visual Studio & Rider
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Database & Local Data
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+## Test Results & Coverage
+[Tt]est[Rr]esult*/
+coverage.opencover.xml
+coverage.cobertura.xml
+*.coverage
+
+## OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+## Temporary files & User secrets
+*.tmp
+*.temp
+secrets.json
+appsettings.*.local.json

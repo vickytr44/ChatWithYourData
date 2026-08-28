@@ -1,0 +1,39 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Services/" />
+  <Folder Name="/src/Services/ChatWithYourData.FinanceService/">
+    <Project Path="src/Services/ChatWithYourData.FinanceService/ChatWithYourData.FinanceService.API/ChatWithYourData.FinanceService.API.csproj" />
+    <Project Path="src/Services/ChatWithYourData.FinanceService/ChatWithYourData.FinanceService.Application/ChatWithYourData.FinanceService.Application.csproj" />
+    <Project Path="src/Services/ChatWithYourData.FinanceService/ChatWithYourData.FinanceService.Domain/ChatWithYourData.FinanceService.Domain.csproj" />
+    <Project Path="src/Services/ChatWithYourData.FinanceService/ChatWithYourData.FinanceService.Infrastructure/ChatWithYourData.FinanceService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ChatWithYourData.InventoryService/">
+    <Project Path="src/Services/ChatWithYourData.InventoryService/ChatWithYourData.InventoryService.API/ChatWithYourData.InventoryService.API.csproj" />
+    <Project Path="src/Services/ChatWithYourData.InventoryService/ChatWithYourData.InventoryService.Application/ChatWithYourData.InventoryService.Application.csproj" />
+    <Project Path="src/Services/ChatWithYourData.InventoryService/ChatWithYourData.InventoryService.Domain/ChatWithYourData.InventoryService.Domain.csproj" />
+    <Project Path="src/Services/ChatWithYourData.InventoryService/ChatWithYourData.InventoryService.Infrastructure/ChatWithYourData.InventoryService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ChatWithYourData.ProcurementService/">
+    <Project Path="src/Services/ChatWithYourData.ProcurementService/ChatWithYourData.ProcurementService.API/ChatWithYourData.ProcurementService.API.csproj" />
+    <Project Path="src/Services/ChatWithYourData.ProcurementService/ChatWithYourData.ProcurementService.Application/ChatWithYourData.ProcurementService.Application.csproj" />
+    <Project Path="src/Services/ChatWithYourData.ProcurementService/ChatWithYourData.ProcurementService.Domain/ChatWithYourData.ProcurementService.Domain.csproj" />
+    <Project Path="src/Services/ChatWithYourData.ProcurementService/ChatWithYourData.ProcurementService.Infrastructure/ChatWithYourData.ProcurementService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/Services/ChatWithYourData.SalesService/">
+    <Project Path="src/Services/ChatWithYourData.SalesService/ChatWithYourData.SalesService.API/ChatWithYourData.SalesService.API.csproj" />
+    <Project Path="src/Services/ChatWithYourData.SalesService/ChatWithYourData.SalesService.Application/ChatWithYourData.SalesService.Application.csproj" />
+    <Project Path="src/Services/ChatWithYourData.SalesService/ChatWithYourData.SalesService.Domain/ChatWithYourData.SalesService.Domain.csproj" />
+    <Project Path="src/Services/ChatWithYourData.SalesService/ChatWithYourData.SalesService.Infrastructure/ChatWithYourData.SalesService.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/" />
+  <Folder Name="/tests/Services/">
+    <Project Path="tests/Services/ChatWithYourData.FinanceService.IntegrationTests/ChatWithYourData.FinanceService.IntegrationTests.csproj" />
+    <Project Path="tests/Services/ChatWithYourData.FinanceService.UnitTests/ChatWithYourData.FinanceService.UnitTests.csproj" />
+    <Project Path="tests/Services/ChatWithYourData.InventoryService.IntegrationTests/ChatWithYourData.InventoryService.IntegrationTests.csproj" />
+    <Project Path="tests/Services/ChatWithYourData.InventoryService.UnitTests/ChatWithYourData.InventoryService.UnitTests.csproj" />
+    <Project Path="tests/Services/ChatWithYourData.ProcurementService.IntegrationTests/ChatWithYourData.ProcurementService.IntegrationTests.csproj" />
+    <Project Path="tests/Services/ChatWithYourData.ProcurementService.UnitTests/ChatWithYourData.ProcurementService.UnitTests.csproj" />
+    <Project Path="tests/Services/ChatWithYourData.SalesService.IntegrationTests/ChatWithYourData.SalesService.IntegrationTests.csproj" />
+    <Project Path="tests/Services/ChatWithYourData.SalesService.UnitTests/ChatWithYourData.SalesService.UnitTests.csproj" />
+  </Folder>
+</Solution>
