@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChatWithYourData.InventoryService.API.GraphQL.Queries;
 
+[GraphQLName("Query")]
 public class InventoryQueries
 {
     [UsePaging]

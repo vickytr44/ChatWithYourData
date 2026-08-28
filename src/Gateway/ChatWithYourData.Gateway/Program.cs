@@ -36,19 +36,27 @@ var gatewayBuilder = builder
     .AddMcp()
     .AddMcpStorage<InMemoryMcpStorage>();
 
-var fallbackDoc = Utf8GraphQLParser.Parse("""
-    type Query {
-        gatewayStatus: String!
-    }
+var gatewayConfigFile = System.IO.Path.Combine(builder.Environment.ContentRootPath, "gateway.far");
+if (System.IO.File.Exists(gatewayConfigFile))
+{
+    gatewayBuilder.AddFileSystemConfiguration(gatewayConfigFile);
+}
+else
+{
+    var fallbackDoc = Utf8GraphQLParser.Parse("""
+        type Query {
+            gatewayStatus: String!
+        }
 
-    enum fusion__Schema {
-        Inventory
-        Sales
-        Procurement
-        Finance
-    }
-""");
-gatewayBuilder.AddInMemoryConfiguration(fallbackDoc, null!);
+        enum fusion__Schema {
+            Inventory
+            Sales
+            Procurement
+            Finance
+        }
+    """);
+    gatewayBuilder.AddInMemoryConfiguration(fallbackDoc, null!);
+}
 
 var app = builder.Build();
 
@@ -77,4 +85,7 @@ app.MapGet("/", () => new
 
 app.Run();
 
-public partial class Program { }
+namespace ChatWithYourData.Gateway
+{
+    public partial class Program { }
+}

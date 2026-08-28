@@ -23,6 +23,7 @@ public record PostJournalEntryInput(
 
 public record FinanceMutationPayload<T>(bool Success, T? Data, string? Error);
 
+[GraphQLName("Mutation")]
 public class FinanceMutations
 {
     public async Task<FinanceMutationPayload<AccountDto>> CreateAccountAsync(

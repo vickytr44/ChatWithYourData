@@ -6,11 +6,11 @@ using Xunit;
 
 namespace ChatWithYourData.Gateway.IntegrationTests;
 
-public class GatewayIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class GatewayIntegrationTests : IClassFixture<WebApplicationFactory<ChatWithYourData.Gateway.Program>>
 {
     private readonly HttpClient _client;
 
-    public GatewayIntegrationTests(WebApplicationFactory<Program> factory)
+    public GatewayIntegrationTests(WebApplicationFactory<ChatWithYourData.Gateway.Program> factory)
     {
         _client = factory.CreateClient();
     }
@@ -48,6 +48,21 @@ public class GatewayIntegrationTests : IClassFixture<WebApplicationFactory<Progr
 
         // Assert - Should return OK and GraphQL response
         response.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task GatewaySchema_ContainsAllMicroserviceFields()
+    {
+        // Act - Fetch the composed SDL from the Gateway
+        var response = await _client.GetAsync("/graphql?sdl");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var sdl = await response.Content.ReadAsStringAsync();
+        sdl.Should().Contain("products");
+        sdl.Should().Contain("customers");
+        sdl.Should().Contain("vendors");
+        sdl.Should().Contain("accounts");
     }
 }
 

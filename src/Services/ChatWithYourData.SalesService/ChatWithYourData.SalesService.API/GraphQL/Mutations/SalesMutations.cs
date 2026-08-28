@@ -23,6 +23,7 @@ public record CreateSalesOrderInput(
 
 public record SalesMutationPayload<T>(bool Success, T? Data, string? Error);
 
+[GraphQLName("Mutation")]
 public class SalesMutations
 {
     public async Task<SalesMutationPayload<CustomerDto>> CreateCustomerAsync(

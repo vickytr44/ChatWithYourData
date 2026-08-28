@@ -12,4 +12,10 @@
     <PackageReference Include="HotChocolate.Fusion.Adapters.Mcp" Version="16.6.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="gateway.far">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

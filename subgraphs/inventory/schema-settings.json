@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "name": "Inventory",
+  "transports": {
+    "http": {
+      "url": "http://localhost:5001/graphql",
+      "clientName": "Inventory"
+    }
+  }
+}

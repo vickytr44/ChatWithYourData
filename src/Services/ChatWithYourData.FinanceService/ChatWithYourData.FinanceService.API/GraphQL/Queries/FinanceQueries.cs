@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChatWithYourData.FinanceService.API.GraphQL.Queries;
 
+[GraphQLName("Query")]
 public class FinanceQueries
 {
     [UsePaging]

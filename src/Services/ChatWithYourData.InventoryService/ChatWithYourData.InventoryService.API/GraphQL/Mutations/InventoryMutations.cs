@@ -26,6 +26,7 @@ public record AdjustStockInput(
 
 public record MutationPayload<T>(bool Success, T? Data, string? Error);
 
+[GraphQLName("Mutation")]
 public class InventoryMutations
 {
     public async Task<MutationPayload<ProductDto>> CreateProductAsync(

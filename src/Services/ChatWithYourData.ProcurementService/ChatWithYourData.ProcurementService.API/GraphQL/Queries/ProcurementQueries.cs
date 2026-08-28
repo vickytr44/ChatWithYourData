@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ChatWithYourData.ProcurementService.API.GraphQL.Queries;
 
+[GraphQLName("Query")]
 public class ProcurementQueries
 {
     [UsePaging]

@@ -24,6 +24,7 @@ public record CreatePurchaseOrderInput(
 
 public record ProcurementMutationPayload<T>(bool Success, T? Data, string? Error);
 
+[GraphQLName("Mutation")]
 public class ProcurementMutations
 {
     public async Task<ProcurementMutationPayload<VendorDto>> CreateVendorAsync(
