@@ -32,7 +32,6 @@ Detailed technical specifications and guidelines are modularized into dedicated 
 ChatWithYourData/
 ├── AGENTS.md
 ├── run-services.bat
-├── stop-services.bat
 ├── docs/
 │   ├── architecture/
 │   │   ├── microservices.md
@@ -50,6 +49,8 @@ ChatWithYourData/
 │       ├── ChatWithYourData.ProcurementService/
 │       └── ChatWithYourData.FinanceService/
 └── tests/
+    ├── Gateway/
+    │   └── ChatWithYourData.Gateway.IntegrationTests/
     └── Services/
         ├── ChatWithYourData.InventoryService.UnitTests/
         ├── ChatWithYourData.InventoryService.IntegrationTests/

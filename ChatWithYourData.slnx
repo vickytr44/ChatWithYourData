@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/" />
+  <Folder Name="/src/Gateway/">
+    <Project Path="src/Gateway/ChatWithYourData.Gateway/ChatWithYourData.Gateway.csproj" />
+  </Folder>
   <Folder Name="/src/Services/" />
   <Folder Name="/src/Services/ChatWithYourData.FinanceService/">
     <Project Path="src/Services/ChatWithYourData.FinanceService/ChatWithYourData.FinanceService.API/ChatWithYourData.FinanceService.API.csproj" />
@@ -26,6 +29,9 @@
     <Project Path="src/Services/ChatWithYourData.SalesService/ChatWithYourData.SalesService.Infrastructure/ChatWithYourData.SalesService.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/" />
+  <Folder Name="/tests/Gateway/">
+    <Project Path="tests/Gateway/ChatWithYourData.Gateway.IntegrationTests/ChatWithYourData.Gateway.IntegrationTests.csproj" />
+  </Folder>
   <Folder Name="/tests/Services/">
     <Project Path="tests/Services/ChatWithYourData.FinanceService.IntegrationTests/ChatWithYourData.FinanceService.IntegrationTests.csproj" />
     <Project Path="tests/Services/ChatWithYourData.FinanceService.UnitTests/ChatWithYourData.FinanceService.UnitTests.csproj" />
