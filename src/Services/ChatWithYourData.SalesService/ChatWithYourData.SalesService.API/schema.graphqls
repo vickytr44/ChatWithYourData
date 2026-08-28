@@ -161,6 +161,7 @@ type SalesOrder @key(fields: "id") {
   customer: Customer @cost(weight: "10")
   lines: [SalesOrderLine!]! @cost(weight: "10")
   orderNumber: String!
+  customerId: UUID!
   orderDateUtc: DateTime!
   status: OrderStatus!
   totalAmount: Decimal!
@@ -192,6 +193,7 @@ type SalesOrderEdge @shareable {
 type SalesOrderLine {
   product: Product!
   salesOrderId: UUID!
+  productId: UUID!
   sku: String!
   productName: String!
   quantity: Int!
@@ -205,6 +207,7 @@ type SalesOrderLine {
 
 type Shipment @key(fields: "id") {
   salesOrder: SalesOrder @cost(weight: "10")
+  salesOrderId: UUID!
   trackingNumber: String!
   carrier: String!
   status: ShipmentStatus!

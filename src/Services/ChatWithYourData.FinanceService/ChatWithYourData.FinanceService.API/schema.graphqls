@@ -146,6 +146,7 @@ type Invoice @key(fields: "id") {
   customer: Customer
   payments: [Payment!]! @cost(weight: "10")
   invoiceNumber: String!
+  customerId: UUID
   salesOrderId: UUID
   issueDateUtc: DateTime!
   dueDateUtc: DateTime!
@@ -213,6 +214,7 @@ type JournalEntryEdge @shareable {
 type JournalLine {
   account: Account @cost(weight: "10")
   journalEntryId: UUID!
+  accountId: UUID!
   debitAmount: Decimal!
   creditAmount: Decimal!
   memo: String!
@@ -247,6 +249,7 @@ type PageInfo @shareable {
 
 type Payment @key(fields: "id") {
   invoice: Invoice @cost(weight: "10")
+  invoiceId: UUID!
   paymentNumber: String!
   paymentDateUtc: DateTime!
   amount: Decimal!

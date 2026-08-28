@@ -196,6 +196,7 @@ type Product @key(fields: "id") {
   unitPrice: Decimal!
   unitOfMeasure: String!
   isActive: Boolean!
+  categoryId: UUID!
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
@@ -228,6 +229,8 @@ type ProductNotFoundError implements Error {
 type StockItem @key(fields: "id") {
   product: Product @cost(weight: "10")
   warehouse: Warehouse @cost(weight: "10")
+  productId: UUID!
+  warehouseId: UUID!
   quantityOnHand: Int!
   quantityReserved: Int!
   reorderPoint: Int!

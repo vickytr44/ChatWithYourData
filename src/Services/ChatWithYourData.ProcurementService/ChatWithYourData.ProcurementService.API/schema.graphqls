@@ -88,6 +88,7 @@ type CreateVendorPayload {
 
 type GoodsReceipt @key(fields: "id") {
   purchaseOrder: PurchaseOrder @cost(weight: "10")
+  purchaseOrderId: UUID!
   receiptNumber: String!
   receivedDateUtc: DateTime!
   receivedBy: String!
@@ -148,6 +149,7 @@ type PurchaseOrder @key(fields: "id") {
   vendor: Vendor @cost(weight: "10")
   lines: [PurchaseOrderLine!]! @cost(weight: "10")
   poNumber: String!
+  vendorId: UUID!
   orderDateUtc: DateTime!
   expectedDeliveryDateUtc: DateTime
   status: PurchaseOrderStatus!
@@ -180,6 +182,7 @@ type PurchaseOrderEdge @shareable {
 type PurchaseOrderLine {
   product: Product!
   purchaseOrderId: UUID!
+  productId: UUID!
   sku: String!
   productName: String!
   quantityOrdered: Int!
