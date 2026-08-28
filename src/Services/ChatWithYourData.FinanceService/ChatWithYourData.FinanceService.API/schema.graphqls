@@ -138,10 +138,14 @@ type CreateAccountPayload {
   errors: [CreateAccountError!]
 }
 
+type Customer {
+  id: ID!
+}
+
 type Invoice @key(fields: "id") {
+  customer: Customer
   payments: [Payment!]! @cost(weight: "10")
   invoiceNumber: String!
-  customerId: UUID
   salesOrderId: UUID
   issueDateUtc: DateTime!
   dueDateUtc: DateTime!

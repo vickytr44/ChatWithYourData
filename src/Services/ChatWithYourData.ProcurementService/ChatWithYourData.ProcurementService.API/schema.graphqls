@@ -140,6 +140,10 @@ type PageInfo @shareable {
   backwardCursors: [PageCursor!]!
 }
 
+type Product {
+  id: ID!
+}
+
 type PurchaseOrder @key(fields: "id") {
   vendor: Vendor @cost(weight: "10")
   lines: [PurchaseOrderLine!]! @cost(weight: "10")
@@ -174,8 +178,8 @@ type PurchaseOrderEdge @shareable {
 }
 
 type PurchaseOrderLine {
+  product: Product!
   purchaseOrderId: UUID!
-  productId: UUID!
   sku: String!
   productName: String!
   quantityOrdered: Int!

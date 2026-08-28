@@ -1,4 +1,3 @@
-
 using ChatWithYourData.FinanceService.API.GraphQL.DataLoaders;
 using ChatWithYourData.FinanceService.Domain.Entities;
 using GreenDonut.Data;
@@ -41,7 +40,6 @@ internal static partial class JournalEntryNode
 [ObjectType<Invoice>]
 internal static partial class InvoiceNode
 {
-    [BindMember(nameof(Invoice.CustomerId))]
     public static CustomerEntityStub? GetCustomer(
         [Parent(requires: nameof(Invoice.CustomerId))] Invoice invoice)
         => invoice.CustomerId.HasValue ? new CustomerEntityStub { Id = invoice.CustomerId.Value } : null;
@@ -71,7 +69,6 @@ internal static partial class AccountNode
 [ObjectType<JournalLine>]
 internal static partial class JournalLineNode
 {
-    [BindMember(nameof(JournalLine.AccountId))]
     public static async Task<Account?> GetAccountAsync(
         [Parent(requires: nameof(JournalLine.AccountId))] JournalLine line,
         QueryContext<Account> query,
@@ -89,7 +86,6 @@ internal static partial class JournalLineNode
 [ObjectType<Payment>]
 internal static partial class PaymentNode
 {
-    [BindMember(nameof(Payment.InvoiceId))]
     public static async Task<Invoice?> GetInvoiceAsync(
         [Parent(requires: nameof(Payment.InvoiceId))] Payment payment,
         QueryContext<Invoice> query,

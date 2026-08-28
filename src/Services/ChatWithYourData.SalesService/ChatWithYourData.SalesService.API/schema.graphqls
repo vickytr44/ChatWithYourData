@@ -153,6 +153,10 @@ type PageInfo @shareable {
   backwardCursors: [PageCursor!]!
 }
 
+type Product {
+  id: ID!
+}
+
 type SalesOrder @key(fields: "id") {
   customer: Customer @cost(weight: "10")
   lines: [SalesOrderLine!]! @cost(weight: "10")
@@ -186,8 +190,8 @@ type SalesOrderEdge @shareable {
 }
 
 type SalesOrderLine {
+  product: Product!
   salesOrderId: UUID!
-  productId: UUID!
   sku: String!
   productName: String!
   quantity: Int!

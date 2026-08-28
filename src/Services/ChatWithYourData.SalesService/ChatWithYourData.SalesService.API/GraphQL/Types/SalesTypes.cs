@@ -24,7 +24,6 @@ internal static partial class ProductEntityStubNode
 [ObjectType<SalesOrder>]
 internal static partial class SalesOrderNode
 {
-    [BindMember(nameof(SalesOrder.CustomerId))]
     public static async Task<Customer?> GetCustomerAsync(
         [Parent(requires: nameof(SalesOrder.CustomerId))] SalesOrder order,
         QueryContext<Customer> query,
@@ -59,7 +58,6 @@ internal static partial class CustomerNode
 [ObjectType<SalesOrderLine>]
 internal static partial class SalesOrderLineNode
 {
-    [BindMember(nameof(SalesOrderLine.ProductId))]
     public static ProductEntityStub GetProduct(
         [Parent(requires: nameof(SalesOrderLine.ProductId))] SalesOrderLine line)
         => new ProductEntityStub { Id = line.ProductId };
@@ -73,7 +71,6 @@ internal static partial class SalesOrderLineNode
 [ObjectType<Shipment>]
 internal static partial class ShipmentNode
 {
-    [BindMember(nameof(Shipment.SalesOrderId))]
     public static async Task<SalesOrder?> GetSalesOrderAsync(
         [Parent(requires: nameof(Shipment.SalesOrderId))] Shipment shipment,
         QueryContext<SalesOrder> query,

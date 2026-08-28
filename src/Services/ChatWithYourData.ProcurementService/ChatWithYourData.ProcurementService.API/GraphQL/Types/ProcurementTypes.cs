@@ -24,7 +24,6 @@ internal static partial class ProductEntityStubNode
 [ObjectType<PurchaseOrder>]
 internal static partial class PurchaseOrderNode
 {
-    [BindMember(nameof(PurchaseOrder.VendorId))]
     public static async Task<Vendor?> GetVendorAsync(
         [Parent(requires: nameof(PurchaseOrder.VendorId))] PurchaseOrder po,
         QueryContext<Vendor> query,
@@ -59,7 +58,6 @@ internal static partial class VendorNode
 [ObjectType<PurchaseOrderLine>]
 internal static partial class PurchaseOrderLineNode
 {
-    [BindMember(nameof(PurchaseOrderLine.ProductId))]
     public static ProductEntityStub GetProduct(
         [Parent(requires: nameof(PurchaseOrderLine.ProductId))] PurchaseOrderLine line)
         => new ProductEntityStub { Id = line.ProductId };
@@ -73,7 +71,6 @@ internal static partial class PurchaseOrderLineNode
 [ObjectType<GoodsReceipt>]
 internal static partial class GoodsReceiptNode
 {
-    [BindMember(nameof(GoodsReceipt.PurchaseOrderId))]
     public static async Task<PurchaseOrder?> GetPurchaseOrderAsync(
         [Parent(requires: nameof(GoodsReceipt.PurchaseOrderId))] GoodsReceipt receipt,
         QueryContext<PurchaseOrder> query,

@@ -8,7 +8,6 @@ namespace ChatWithYourData.InventoryService.API.GraphQL.Types;
 [ObjectType<Product>]
 internal static partial class ProductNode
 {
-    [BindMember(nameof(Product.CategoryId))]
     public static async Task<Category?> GetCategoryAsync(
         [Parent(requires: nameof(Product.CategoryId))] Product product,
         QueryContext<Category> query,
@@ -34,7 +33,6 @@ internal static partial class ProductNode
 [ObjectType<StockItem>]
 internal static partial class StockItemNode
 {
-    [BindMember(nameof(StockItem.ProductId))]
     public static async Task<Product?> GetProductAsync(
         [Parent(requires: nameof(StockItem.ProductId))] StockItem stockItem,
         QueryContext<Product> query,
@@ -42,7 +40,6 @@ internal static partial class StockItemNode
         CancellationToken cancellationToken)
         => await productById.With(query).LoadAsync(stockItem.ProductId, cancellationToken);
 
-    [BindMember(nameof(StockItem.WarehouseId))]
     public static async Task<Warehouse?> GetWarehouseAsync(
         [Parent(requires: nameof(StockItem.WarehouseId))] StockItem stockItem,
         QueryContext<Warehouse> query,
