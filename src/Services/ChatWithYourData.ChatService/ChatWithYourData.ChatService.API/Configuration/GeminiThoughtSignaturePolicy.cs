@@ -1,3 +1,4 @@
+using System;
 using System.ClientModel;
 using System.ClientModel.Primitives;
 using System.Collections.Concurrent;
@@ -5,6 +6,8 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace ChatWithYourData.ChatService.API.Configuration;
 
@@ -75,66 +78,154 @@ public sealed class GeminiThoughtSignaturePolicy : PipelinePolicy
         // 2. Call next policy in pipeline
         await ProcessNextAsync(message, pipeline, currentIndex);
 
-        // 3. Capture thought_signature from response chunks/body
+        // 3. Wrap response ContentStream with ThoughtSignatureTrackingStream
         if (message.Response?.ContentStream != null)
         {
-            var responseMs = new MemoryStream();
-            await message.Response.ContentStream.CopyToAsync(responseMs);
-            var responseBytes = responseMs.ToArray();
-            message.Response.ContentStream = new MemoryStream(responseBytes);
+            message.Response.ContentStream = new ThoughtSignatureTrackingStream(
+                message.Response.ContentStream,
+                _thoughtSignatures);
+        }
+    }
 
-            var respStr = Encoding.UTF8.GetString(responseBytes);
-            if (respStr.Contains("thought_signature"))
+    private sealed class ThoughtSignatureTrackingStream : Stream
+    {
+        private readonly Stream _inner;
+        private readonly ConcurrentDictionary<string, string> _signatures;
+        private readonly StringBuilder _buffer = new();
+
+        public ThoughtSignatureTrackingStream(Stream inner, ConcurrentDictionary<string, string> signatures)
+        {
+            _inner = inner;
+            _signatures = signatures;
+        }
+
+        public override bool CanRead => _inner.CanRead;
+        public override bool CanSeek => false; // Prevent ClientModel from asserting Position == 0 on dispose
+        public override bool CanWrite => false;
+        public override long Length => _inner.Length;
+        public override long Position
+        {
+            get => _inner.Position;
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => _inner.Flush();
+        public override Task FlushAsync(CancellationToken cancellationToken) => _inner.FlushAsync(cancellationToken);
+
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            var read = _inner.Read(buffer, offset, count);
+            if (read > 0)
             {
-                var lines = respStr.Split('\n');
-                foreach (var line in lines)
-                {
-                    var trimmed = line.Trim();
-                    if (trimmed.StartsWith("data:"))
-                    {
-                        trimmed = trimmed.Substring(5).Trim();
-                    }
-                    if (trimmed.StartsWith("{") && trimmed.EndsWith("}"))
-                    {
-                        try
-                        {
-                            using var doc = JsonDocument.Parse(trimmed);
-                            if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
-                            {
-                                var choice = choices[0];
-                                JsonElement toolCallsElement = default;
-                                if (choice.TryGetProperty("message", out var msg) && msg.TryGetProperty("tool_calls", out var tc1))
-                                {
-                                    toolCallsElement = tc1;
-                                }
-                                else if (choice.TryGetProperty("delta", out var delta) && delta.TryGetProperty("tool_calls", out var tc2))
-                                {
-                                    toolCallsElement = tc2;
-                                }
+                ProcessBytes(buffer, offset, read);
+            }
+            return read;
+        }
 
-                                if (toolCallsElement.ValueKind == JsonValueKind.Array)
+        public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            var read = await _inner.ReadAsync(buffer.AsMemory(offset, count), cancellationToken);
+            if (read > 0)
+            {
+                ProcessBytes(buffer, offset, read);
+            }
+            return read;
+        }
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            var read = await _inner.ReadAsync(buffer, cancellationToken);
+            if (read > 0)
+            {
+                var bytes = buffer.Slice(0, read).ToArray();
+                ProcessBytes(bytes, 0, read);
+            }
+            return read;
+        }
+
+        private void ProcessBytes(byte[] buffer, int offset, int count)
+        {
+            try
+            {
+                var text = Encoding.UTF8.GetString(buffer, offset, count);
+                _buffer.Append(text);
+                var full = _buffer.ToString();
+
+                if (full.Contains("thought_signature"))
+                {
+                    var lines = full.Split('\n');
+                    for (int i = 0; i < lines.Length - 1; i++)
+                    {
+                        var line = lines[i].Trim();
+                        if (line.StartsWith("data:"))
+                        {
+                            line = line.Substring(5).Trim();
+                        }
+                        if (line.StartsWith("{") && line.EndsWith("}"))
+                        {
+                            ExtractSignature(line);
+                        }
+                    }
+                    _buffer.Clear();
+                    _buffer.Append(lines[^1]);
+                }
+            }
+            catch { }
+        }
+
+        private void ExtractSignature(string json)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("choices", out var choices) && choices.GetArrayLength() > 0)
+                {
+                    var choice = choices[0];
+                    JsonElement toolCalls = default;
+                    if (choice.TryGetProperty("message", out var msg) && msg.TryGetProperty("tool_calls", out var tc1))
+                        toolCalls = tc1;
+                    else if (choice.TryGetProperty("delta", out var delta) && delta.TryGetProperty("tool_calls", out var tc2))
+                        toolCalls = tc2;
+
+                    if (toolCalls.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var tc in toolCalls.EnumerateArray())
+                        {
+                            var id = tc.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
+                            if (tc.TryGetProperty("extra_content", out var extra) &&
+                                extra.TryGetProperty("google", out var google) &&
+                                google.TryGetProperty("thought_signature", out var sig))
+                            {
+                                var sigStr = sig.GetString();
+                                if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(sigStr))
                                 {
-                                    foreach (var tc in toolCallsElement.EnumerateArray())
-                                    {
-                                        var id = tc.TryGetProperty("id", out var idProp) ? idProp.GetString() : null;
-                                        if (tc.TryGetProperty("extra_content", out var extra) &&
-                                            extra.TryGetProperty("google", out var google) &&
-                                            google.TryGetProperty("thought_signature", out var sig))
-                                        {
-                                            var sigStr = sig.GetString();
-                                            if (!string.IsNullOrEmpty(id) && !string.IsNullOrEmpty(sigStr))
-                                            {
-                                                _thoughtSignatures[id] = sigStr;
-                                            }
-                                        }
-                                    }
+                                    _signatures[id] = sigStr;
                                 }
                             }
                         }
-                        catch { }
                     }
                 }
             }
+            catch { }
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await _inner.DisposeAsync();
+            await base.DisposeAsync();
         }
     }
 }
