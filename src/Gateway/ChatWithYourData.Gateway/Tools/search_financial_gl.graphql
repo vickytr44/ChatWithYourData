@@ -9,11 +9,11 @@ query SearchFinancialGL(
   accounts(where: $whereAccounts, first: $first) {
     nodes {
       id
-      code
+      accountCode
       name
       type
-      balance
-      currency
+      description
+      currentBalance
       isActive
     }
   }
@@ -22,16 +22,18 @@ query SearchFinancialGL(
       id
       entryNumber
       entryDateUtc
-      memo
+      description
+      reference
       isPosted
       lines {
         id
         accountId
-        debit
-        credit
+        debitAmount
+        creditAmount
         memo
         account {
-          code
+          id
+          accountCode
           name
         }
       }

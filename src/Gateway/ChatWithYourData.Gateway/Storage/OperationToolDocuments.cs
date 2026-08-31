@@ -14,9 +14,8 @@ public static class OperationToolDocuments
               orderNumber
               orderDateUtc
               status
-              subtotal
-              taxAmount
               totalAmount
+              notes
               customer {
                 id
                 customerNumber
@@ -24,18 +23,17 @@ public static class OperationToolDocuments
                 email
                 phone
                 billingAddress
+                shippingAddress
               }
               lines {
                 id
+                productId
+                sku
+                productName
                 quantity
                 unitPrice
-                subtotal
-                product {
-                  id
-                  sku
-                  name
-                  unitPrice
-                }
+                discountPercentage
+                lineTotal
               }
             }
           }
@@ -54,20 +52,25 @@ public static class OperationToolDocuments
               sku
               name
               description
-              category
               unitPrice
-              reorderPoint
+              unitOfMeasure
               isActive
+              category {
+                id
+                name
+                description
+              }
               stockItems {
                 id
                 warehouseId
                 quantityOnHand
-                allocatedQuantity
-                availableQuantity
+                quantityReserved
+                reorderPoint
                 warehouse {
                   id
+                  code
                   name
-                  location
+                  locationAddress
                 }
               }
             }
@@ -85,6 +88,8 @@ public static class OperationToolDocuments
             nodes {
               id
               invoiceNumber
+              customerId
+              salesOrderId
               issueDateUtc
               dueDateUtc
               status
@@ -92,19 +97,14 @@ public static class OperationToolDocuments
               taxAmount
               totalAmount
               paidAmount
-              customer {
-                id
-                customerNumber
-                name
-                email
-              }
+              notes
               payments {
                 id
                 paymentNumber
-                amount
                 paymentDateUtc
-                paymentMethod
-                reference
+                amount
+                method
+                referenceNumber
               }
             }
           }
@@ -125,28 +125,33 @@ public static class OperationToolDocuments
               expectedDeliveryDateUtc
               status
               totalCost
+              notes
               vendor {
                 id
-                vendorNumber
+                vendorCode
                 name
-                email
+                contactEmail
+                phone
+                address
+                paymentTermsDays
+                taxId
               }
               lines {
                 id
-                quantity
+                productId
+                sku
+                productName
+                quantityOrdered
+                quantityReceived
                 unitCost
-                totalCost
-                product {
-                  id
-                  sku
-                  name
-                }
+                lineTotal
               }
-              receipts {
+              goodsReceipts {
                 id
                 receiptNumber
-                receiptDateUtc
-                status
+                receivedDateUtc
+                receivedBy
+                notes
               }
             }
           }
@@ -162,11 +167,11 @@ public static class OperationToolDocuments
           accounts(where: $whereAccounts, first: $first) {
             nodes {
               id
-              code
+              accountCode
               name
               type
-              balance
-              currency
+              description
+              currentBalance
               isActive
             }
           }
@@ -175,16 +180,18 @@ public static class OperationToolDocuments
               id
               entryNumber
               entryDateUtc
-              memo
+              description
+              reference
               isPosted
               lines {
                 id
                 accountId
-                debit
-                credit
+                debitAmount
+                creditAmount
                 memo
                 account {
-                  code
+                  id
+                  accountCode
                   name
                 }
               }

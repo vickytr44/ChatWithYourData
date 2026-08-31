@@ -10,6 +10,8 @@ query SearchInvoicesAndPayments(
     nodes {
       id
       invoiceNumber
+      customerId
+      salesOrderId
       issueDateUtc
       dueDateUtc
       status
@@ -17,19 +19,14 @@ query SearchInvoicesAndPayments(
       taxAmount
       totalAmount
       paidAmount
-      customer {
-        id
-        customerNumber
-        name
-        email
-      }
+      notes
       payments {
         id
         paymentNumber
-        amount
         paymentDateUtc
-        paymentMethod
-        reference
+        amount
+        method
+        referenceNumber
       }
     }
   }

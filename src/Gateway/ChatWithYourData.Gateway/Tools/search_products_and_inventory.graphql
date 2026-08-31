@@ -1,5 +1,5 @@
 """
-Searches inventory products, pricing, categories, and warehouse stock levels with flexible filtering and sorting.
+Searches inventory products, categories, pricing, and warehouse stock levels with flexible filtering and sorting.
 """
 query SearchProductsAndInventory(
   $where: ProductFilterInput
@@ -12,20 +12,25 @@ query SearchProductsAndInventory(
       sku
       name
       description
-      category
       unitPrice
-      reorderPoint
+      unitOfMeasure
       isActive
+      category {
+        id
+        name
+        description
+      }
       stockItems {
         id
         warehouseId
         quantityOnHand
-        allocatedQuantity
-        availableQuantity
+        quantityReserved
+        reorderPoint
         warehouse {
           id
+          code
           name
-          location
+          locationAddress
         }
       }
     }

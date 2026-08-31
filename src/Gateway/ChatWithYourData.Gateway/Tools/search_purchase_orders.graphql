@@ -14,28 +14,33 @@ query SearchPurchaseOrders(
       expectedDeliveryDateUtc
       status
       totalCost
+      notes
       vendor {
         id
-        vendorNumber
+        vendorCode
         name
-        email
+        contactEmail
+        phone
+        address
+        paymentTermsDays
+        taxId
       }
       lines {
         id
-        quantity
+        productId
+        sku
+        productName
+        quantityOrdered
+        quantityReceived
         unitCost
-        totalCost
-        product {
-          id
-          sku
-          name
-        }
+        lineTotal
       }
-      receipts {
+      goodsReceipts {
         id
         receiptNumber
-        receiptDateUtc
-        status
+        receivedDateUtc
+        receivedBy
+        notes
       }
     }
   }

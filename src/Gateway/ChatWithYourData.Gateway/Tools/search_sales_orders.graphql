@@ -1,5 +1,5 @@
 """
-Searches customer sales orders, line items, products, and customer details with flexible filtering and sorting.
+Searches customer sales orders, line items, and customer details with flexible filtering and sorting.
 """
 query SearchSalesOrders(
   $where: SalesOrderFilterInput
@@ -12,9 +12,8 @@ query SearchSalesOrders(
       orderNumber
       orderDateUtc
       status
-      subtotal
-      taxAmount
       totalAmount
+      notes
       customer {
         id
         customerNumber
@@ -22,18 +21,17 @@ query SearchSalesOrders(
         email
         phone
         billingAddress
+        shippingAddress
       }
       lines {
         id
+        productId
+        sku
+        productName
         quantity
         unitPrice
-        subtotal
-        product {
-          id
-          sku
-          name
-          unitPrice
-        }
+        discountPercentage
+        lineTotal
       }
     }
   }
