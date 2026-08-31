@@ -3,6 +3,23 @@ using HotChocolate.Language;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure Nitro Cloud if configured, or fallback to local IMcpStorage
+var nitroApiId = builder.Configuration["Nitro:ApiId"];
+var nitroApiKey = builder.Configuration["Nitro:ApiKey"];
+var nitroStage = builder.Configuration["Nitro:Stage"] ?? "dev";
+
+if (!string.IsNullOrWhiteSpace(nitroApiId) && !string.IsNullOrWhiteSpace(nitroApiKey))
+{
+    builder.Services
+        .AddNitro(o =>
+        {
+            o.ApiId = nitroApiId;
+            o.ApiKey = nitroApiKey;
+            o.Stage = nitroStage;
+        })
+        .AddDefaults();
+}
+
 // Configure port
 builder.WebHost.ConfigureKestrel(options =>
 {
@@ -33,8 +50,12 @@ builder.Services.AddHttpClient("Finance", client => client.BaseAddress = new Uri
 // Configure Fusion Gateway and MCP Adapter
 var gatewayBuilder = builder
     .AddGraphQLGateway()
-    .AddMcp()
-    .AddMcpStorage<InMemoryMcpStorage>();
+    .AddMcp();
+
+if (string.IsNullOrWhiteSpace(nitroApiId) || string.IsNullOrWhiteSpace(nitroApiKey))
+{
+    gatewayBuilder.AddMcpStorage<InMemoryMcpStorage>();
+}
 
 var gatewayConfigFile = System.IO.Path.Combine(builder.Environment.ContentRootPath, "gateway.far");
 if (System.IO.File.Exists(gatewayConfigFile))
@@ -74,6 +95,7 @@ app.MapGet("/", () => new
         GraphQL = "/graphql",
         MCP = "/graphql/mcp"
     },
+    Nitro = !string.IsNullOrWhiteSpace(nitroApiId) ? "Connected" : "Local Storage",
     Subgraphs = new
     {
         Inventory = inventoryUri,
