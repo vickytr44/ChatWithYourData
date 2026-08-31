@@ -43,9 +43,9 @@ public sealed class AgentOptions
     public string? ApiKey { get; set; }
 
     /// <summary>
-    /// Gets or sets the Model / Deployment Name (e.g., "gemini-2.5-flash", "gpt-4o").
+    /// Gets or sets the Model / Deployment Name (e.g., "gemini-3.1-flash-lite", "gpt-4o").
     /// </summary>
-    public string Model { get; set; } = "gemini-2.5-flash";
+    public string Model { get; set; } = "gemini-3.1-flash-lite";
 
     /// <summary>
     /// Gets or sets the OpenAI-compatible custom endpoint URI (e.g., "https://generativelanguage.googleapis.com/v1beta/openai/").

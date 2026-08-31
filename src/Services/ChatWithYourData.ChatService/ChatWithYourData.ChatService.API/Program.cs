@@ -50,7 +50,12 @@ builder.Services.AddSingleton<IChatClient>(sp =>
         }
 
         var openAiClient = new OpenAIClient(new System.ClientModel.ApiKeyCredential(options.ApiKey), clientOptions);
-        return openAiClient.GetChatClient(options.Model).AsIChatClient();
+        return openAiClient
+            .GetChatClient(options.Model)
+            .AsIChatClient()
+            .AsBuilder()
+            .UseFunctionInvocation()
+            .Build();
     }
 
     // Offline / Mock IChatClient for development & testing
