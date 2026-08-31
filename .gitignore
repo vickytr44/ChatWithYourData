@@ -1,6 +1,7 @@
-## Build results
-[Bb]in/
-[Oo]bj/
+## Build and cache outputs
+bin/
+obj/
+.cache/
 [Ll]og/
 [Ll]ogs/
 
