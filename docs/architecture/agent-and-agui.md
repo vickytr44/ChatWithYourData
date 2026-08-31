@@ -1,21 +1,21 @@
 # AI Agent & AG-UI Protocol Architecture
 
 ## Overview
-The conversational intelligence in `ChatWithYourData.ChatService` is built using **Microsoft Agent Framework** (`Microsoft.Agents.AI`) and communicates with user interfaces via the **AG-UI Protocol** (Agent-User Interaction Protocol).
+The conversational intelligence in `ChatWithYourData.ChatService` is built using **Microsoft Agent Framework** (`Microsoft.Agents.AI` 1.19.0) and communicates with user interfaces via the **AG-UI Protocol** (Agent-User Interaction Protocol) using `Microsoft.Agents.AI.Hosting.AGUI.AspNetCore`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User as Frontend UI / AG-UI Client
-    participant ChatService as ChatService (AG-UI Server)
-    participant Agent as Microsoft Agent Framework
-    participant Gateway as Fusion MCP Gateway (/graphql/mcp)
+    participant ChatService as ChatService (AG-UI Server :5005)
+    participant Agent as Microsoft Agent Framework (AIAgent)
+    participant Gateway as Fusion MCP Gateway (/graphql/mcp :5000)
 
-    User->>ChatService: POST /ag-ui/stream (User prompt + State)
+    User->>ChatService: POST /ag-ui (User prompt + AG-UI Run Request)
     ChatService->>Agent: Process message with context
     Agent-->>ChatService: Yields SSE: Token / Step Events
     ChatService-->>User: SSE: Streaming response chunks
-    Agent->>Gateway: Execute MCP Tool (e.g. search_documents)
+    Agent->>Gateway: Execute MCP Tool (e.g. get_products, get_sales_orders)
     Gateway-->>Agent: Tool Result JSON
     Agent-->>ChatService: Yields SSE: Tool execution event
     ChatService-->>User: SSE: Tool status / visualization event
@@ -25,40 +25,74 @@ sequenceDiagram
 
 ---
 
-## 1. Microsoft Agent Framework (`Microsoft.Agents.AI`)
-- **Reasoning & Planning**: Drives RAG orchestration, multi-step tool calls, and conversation history maintenance.
-- **MCP Client Integration**: Connects to the Fusion Gateway's `/graphql/mcp` endpoint to execute backend queries (e.g., semantic search, document fetch, user verification).
-- **Prompt & Context Management**: Dynamically compiles system instructions, grounded document chunks, and chat history into agent context.
+## 1. Microsoft Agent Framework (`Microsoft.Agents.AI` 1.19.0)
+- **Agent Architecture**: Uses `ChatClientAgent` configured with enterprise ERP instructions and dynamic tools from the MCP Gateway.
+- **Model Support**: Implements `IChatClient` (Microsoft.Extensions.AI) supporting OpenAI, Azure OpenAI, Ollama, and offline/mock clients for testing.
+- **MCP Client Integration**: `McpToolProvider` connects to the Fusion Gateway's `/graphql/mcp` endpoint using `ModelContextProtocol` C# SDK (`HttpClientTransport` in SSE mode).
+- **Prompt & Context Management**: Enterprise system prompt guides the LLM to route queries across the 4 ERP subgraphs: Inventory, Sales, Procurement, and Finance.
 
 ---
 
-## 2. AG-UI Server & Protocol (`Microsoft.Agents.AI.Hosting.AGUI.AspNetCore`)
+## 2. AG-UI Server & Protocol (`Microsoft.Agents.AI.Hosting.AGUI.AspNetCore` 1.19.0-preview)
 - **Protocol**: AG-UI over Server-Sent Events (SSE).
-- **Endpoint**: `/ag-ui/stream` (or configured route).
-- **Key Protocol Capabilities**:
+- **Endpoint**: `/ag-ui` on port `5005`.
+- **Key Capabilities**:
   - **Token Streaming**: Real-time markdown streaming without polling or WebSocket overhead.
-  - **Tool Execution Events**: Streams when a tool is triggered, what parameters were passed, and its execution state for UI badges/visual feedback.
-  - **Human-in-the-Loop (HITL)**: Supports confirmation and approval events when performing sensitive actions.
+  - **Tool Execution Events**: Streams when a tool is triggered, parameters passed, and execution state.
   - **State Synchronization**: Automatically syncs client-side conversation state with backend session records.
 
 ---
 
-## 3. Server Configuration Example
+## 3. Server Configuration & Setup
+
 ```csharp
-// Program.cs snippet for ChatWithYourData.ChatService
+// Program.cs snippet for ChatWithYourData.ChatService.API
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddAIAgent(agentBuilder =>
+builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(5005));
+
+builder.Services.Configure<AgentOptions>(builder.Configuration.GetSection("Agent"));
+builder.Services.AddSingleton<IMcpToolProvider, McpToolProvider>();
+
+builder.Services.AddSingleton<IChatClient>(sp =>
 {
-    agentBuilder.UseOpenAI(builder.Configuration["OpenAI:ApiKey"]!);
-    agentBuilder.AddMcpClient("http://localhost:5000/graphql/mcp");
+    var options = sp.GetRequiredService<IOptions<AgentOptions>>().Value;
+    if (!string.IsNullOrWhiteSpace(options.ApiKey))
+    {
+        return new OpenAIClient(options.ApiKey).GetChatClient(options.Model).AsIChatClient();
+    }
+    return new MockErpChatClient();
 });
 
-builder.Services.AddAGUISupport();
+builder.Services.AddSingleton<AIAgent>(sp =>
+{
+    var chatClient = sp.GetRequiredService<IChatClient>();
+    var toolProvider = sp.GetRequiredService<IMcpToolProvider>();
+    var tools = toolProvider.GetToolsAsync().GetAwaiter().GetResult();
+
+    return new ChatClientAgent(
+        chatClient: chatClient,
+        name: "ChatWithYourDataERP",
+        instructions: "...",
+        tools: tools);
+});
+
+builder.Services.AddAGUIServer();
 
 var app = builder.Build();
 
-app.MapAGUIEndpoint("/ag-ui/stream");
+var agent = app.Services.GetRequiredService<AIAgent>();
+app.MapAGUIServer("/ag-ui", agent);
 
 app.Run();
 ```
+
+---
+
+## 4. Endpoints
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/ag-ui` | `POST` | AG-UI Protocol SSE endpoint for AI Agent conversation streaming |
+| `/health` | `GET` | Service & MCP Gateway health status |
+| `/` | `GET` | Service metadata, AG-UI endpoint routes, and registered tool counts |

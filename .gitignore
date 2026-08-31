@@ -36,8 +36,13 @@ coverage.cobertura.xml
 Thumbs.db
 Desktop.ini
 
-## Temporary files & User secrets
+## Temporary files, User secrets & Environment configs
 *.tmp
 *.temp
 secrets.json
+.env
+*.env
+appsettings.Development.json
+appsettings.*.Development.json
+appsettings.local.json
 appsettings.*.local.json

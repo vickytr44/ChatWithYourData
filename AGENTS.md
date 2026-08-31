@@ -55,6 +55,8 @@ ChatWithYourData/
 │   ├── Gateway/
 │   │   └── ChatWithYourData.Gateway/
 │   └── Services/
+│       ├── ChatWithYourData.ChatService/
+│       │   └── ChatWithYourData.ChatService.API/
 │       ├── ChatWithYourData.InventoryService/
 │       ├── ChatWithYourData.SalesService/
 │       ├── ChatWithYourData.ProcurementService/
@@ -63,6 +65,8 @@ ChatWithYourData/
     ├── Gateway/
     │   └── ChatWithYourData.Gateway.IntegrationTests/
     └── Services/
+        ├── ChatWithYourData.ChatService.UnitTests/
+        ├── ChatWithYourData.ChatService.IntegrationTests/
         ├── ChatWithYourData.InventoryService.UnitTests/
         ├── ChatWithYourData.InventoryService.IntegrationTests/
         ├── ChatWithYourData.SalesService.UnitTests/
