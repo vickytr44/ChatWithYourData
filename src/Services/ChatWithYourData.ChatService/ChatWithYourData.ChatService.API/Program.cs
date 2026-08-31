@@ -49,6 +49,9 @@ builder.Services.AddSingleton<IChatClient>(sp =>
             clientOptions.Endpoint = new Uri(options.Endpoint);
         }
 
+        // Attach policy to preserve Google Gemini thought_signature during multi-turn function calls
+        clientOptions.AddPolicy(new GeminiThoughtSignaturePolicy(), System.ClientModel.Primitives.PipelinePosition.PerCall);
+
         var openAiClient = new OpenAIClient(new System.ClientModel.ApiKeyCredential(options.ApiKey), clientOptions);
         return openAiClient
             .GetChatClient(options.Model)
