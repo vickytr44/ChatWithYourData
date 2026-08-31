@@ -1,0 +1,36 @@
+"""
+Searches customer invoices, totals, status, and payment transaction history with flexible filtering and sorting.
+"""
+query SearchInvoicesAndPayments(
+  $where: InvoiceFilterInput
+  $order: [InvoiceSortInput!]
+  $first: Int
+) {
+  invoices(where: $where, order: $order, first: $first) {
+    nodes {
+      id
+      invoiceNumber
+      issueDateUtc
+      dueDateUtc
+      status
+      subtotal
+      taxAmount
+      totalAmount
+      paidAmount
+      customer {
+        id
+        customerNumber
+        name
+        email
+      }
+      payments {
+        id
+        paymentNumber
+        amount
+        paymentDateUtc
+        paymentMethod
+        reference
+      }
+    }
+  }
+}

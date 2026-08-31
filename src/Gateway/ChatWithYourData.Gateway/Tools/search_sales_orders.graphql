@@ -1,0 +1,40 @@
+"""
+Searches customer sales orders, line items, products, and customer details with flexible filtering and sorting.
+"""
+query SearchSalesOrders(
+  $where: SalesOrderFilterInput
+  $order: [SalesOrderSortInput!]
+  $first: Int
+) {
+  salesOrders(where: $where, order: $order, first: $first) {
+    nodes {
+      id
+      orderNumber
+      orderDateUtc
+      status
+      subtotal
+      taxAmount
+      totalAmount
+      customer {
+        id
+        customerNumber
+        name
+        email
+        phone
+        billingAddress
+      }
+      lines {
+        id
+        quantity
+        unitPrice
+        subtotal
+        product {
+          id
+          sku
+          name
+          unitPrice
+        }
+      }
+    }
+  }
+}

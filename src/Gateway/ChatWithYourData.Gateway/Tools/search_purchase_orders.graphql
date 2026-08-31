@@ -1,0 +1,42 @@
+"""
+Searches vendor purchase orders, vendor details, line items, and goods receipts with flexible filtering and sorting.
+"""
+query SearchPurchaseOrders(
+  $where: PurchaseOrderFilterInput
+  $order: [PurchaseOrderSortInput!]
+  $first: Int
+) {
+  purchaseOrders(where: $where, order: $order, first: $first) {
+    nodes {
+      id
+      poNumber
+      orderDateUtc
+      expectedDeliveryDateUtc
+      status
+      totalCost
+      vendor {
+        id
+        vendorNumber
+        name
+        email
+      }
+      lines {
+        id
+        quantity
+        unitCost
+        totalCost
+        product {
+          id
+          sku
+          name
+        }
+      }
+      receipts {
+        id
+        receiptNumber
+        receiptDateUtc
+        status
+      }
+    }
+  }
+}

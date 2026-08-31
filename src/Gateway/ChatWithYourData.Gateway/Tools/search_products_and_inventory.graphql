@@ -1,0 +1,33 @@
+"""
+Searches inventory products, pricing, categories, and warehouse stock levels with flexible filtering and sorting.
+"""
+query SearchProductsAndInventory(
+  $where: ProductFilterInput
+  $order: [ProductSortInput!]
+  $first: Int
+) {
+  products(where: $where, order: $order, first: $first) {
+    nodes {
+      id
+      sku
+      name
+      description
+      category
+      unitPrice
+      reorderPoint
+      isActive
+      stockItems {
+        id
+        warehouseId
+        quantityOnHand
+        allocatedQuantity
+        availableQuantity
+        warehouse {
+          id
+          name
+          location
+        }
+      }
+    }
+  }
+}

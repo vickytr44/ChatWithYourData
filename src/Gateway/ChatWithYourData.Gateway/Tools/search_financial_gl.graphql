@@ -1,0 +1,40 @@
+"""
+Searches chart of accounts and general ledger journal entries with flexible filtering and sorting.
+"""
+query SearchFinancialGL(
+  $whereAccounts: AccountFilterInput
+  $whereJournals: JournalEntryFilterInput
+  $first: Int
+) {
+  accounts(where: $whereAccounts, first: $first) {
+    nodes {
+      id
+      code
+      name
+      type
+      balance
+      currency
+      isActive
+    }
+  }
+  journalEntries(where: $whereJournals, first: $first) {
+    nodes {
+      id
+      entryNumber
+      entryDateUtc
+      memo
+      isPosted
+      lines {
+        id
+        accountId
+        debit
+        credit
+        memo
+        account {
+          code
+          name
+        }
+      }
+    }
+  }
+}

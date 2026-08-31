@@ -20,37 +20,206 @@ public class InMemoryMcpStorage : IMcpStorage
         {
             _tools.AddRange(new OperationToolDefinition[]
             {
-                new(Utf8GraphQLParser.Parse("{ products { nodes { id sku name unitPrice } } }"))
+                new(Utf8GraphQLParser.Parse("""
+                    query SearchSalesOrders(
+                      $where: SalesOrderFilterInput
+                      $order: [SalesOrderSortInput!]
+                      $first: Int
+                    ) {
+                      salesOrders(where: $where, order: $order, first: $first) {
+                        nodes {
+                          id
+                          orderNumber
+                          orderDateUtc
+                          status
+                          subtotal
+                          taxAmount
+                          totalAmount
+                          customer {
+                            id
+                            customerNumber
+                            name
+                            email
+                            phone
+                            billingAddress
+                          }
+                          lines {
+                            id
+                            quantity
+                            unitPrice
+                            subtotal
+                            product {
+                              id
+                              sku
+                              name
+                              unitPrice
+                            }
+                          }
+                        }
+                      }
+                    }
+                """))
                 {
-                    Name = "get_products"
+                    Name = "search_sales_orders"
                 },
-                new(Utf8GraphQLParser.Parse("{ salesOrders { nodes { id orderNumber status totalAmount } } }"))
+                new(Utf8GraphQLParser.Parse("""
+                    query SearchProductsAndInventory(
+                      $where: ProductFilterInput
+                      $order: [ProductSortInput!]
+                      $first: Int
+                    ) {
+                      products(where: $where, order: $order, first: $first) {
+                        nodes {
+                          id
+                          sku
+                          name
+                          description
+                          category
+                          unitPrice
+                          reorderPoint
+                          isActive
+                          stockItems {
+                            id
+                            warehouseId
+                            quantityOnHand
+                            allocatedQuantity
+                            availableQuantity
+                            warehouse {
+                              id
+                              name
+                              location
+                            }
+                          }
+                        }
+                      }
+                    }
+                """))
                 {
-                    Name = "get_sales_orders"
+                    Name = "search_products_and_inventory"
                 },
-                new(Utf8GraphQLParser.Parse("{ purchaseOrders { nodes { id poNumber status totalCost } } }"))
+                new(Utf8GraphQLParser.Parse("""
+                    query SearchInvoicesAndPayments(
+                      $where: InvoiceFilterInput
+                      $order: [InvoiceSortInput!]
+                      $first: Int
+                    ) {
+                      invoices(where: $where, order: $order, first: $first) {
+                        nodes {
+                          id
+                          invoiceNumber
+                          issueDateUtc
+                          dueDateUtc
+                          status
+                          subtotal
+                          taxAmount
+                          totalAmount
+                          paidAmount
+                          customer {
+                            id
+                            customerNumber
+                            name
+                            email
+                          }
+                          payments {
+                            id
+                            paymentNumber
+                            amount
+                            paymentDateUtc
+                            paymentMethod
+                            reference
+                          }
+                        }
+                      }
+                    }
+                """))
                 {
-                    Name = "get_purchase_orders"
+                    Name = "search_invoices_and_payments"
                 },
-                new(Utf8GraphQLParser.Parse("{ invoices { nodes { id invoiceNumber status totalAmount paidAmount } } }"))
+                new(Utf8GraphQLParser.Parse("""
+                    query SearchPurchaseOrders(
+                      $where: PurchaseOrderFilterInput
+                      $order: [PurchaseOrderSortInput!]
+                      $first: Int
+                    ) {
+                      purchaseOrders(where: $where, order: $order, first: $first) {
+                        nodes {
+                          id
+                          poNumber
+                          orderDateUtc
+                          expectedDeliveryDateUtc
+                          status
+                          totalCost
+                          vendor {
+                            id
+                            vendorNumber
+                            name
+                            email
+                          }
+                          lines {
+                            id
+                            quantity
+                            unitCost
+                            totalCost
+                            product {
+                              id
+                              sku
+                              name
+                            }
+                          }
+                          receipts {
+                            id
+                            receiptNumber
+                            receiptDateUtc
+                            status
+                          }
+                        }
+                      }
+                    }
+                """))
                 {
-                    Name = "get_invoices"
+                    Name = "search_purchase_orders"
                 },
-                new(Utf8GraphQLParser.Parse("mutation ($input: AdjustStockInput!) { adjustStock(input: $input) { data { id quantityOnHand } success error } }"))
+                new(Utf8GraphQLParser.Parse("""
+                    query SearchFinancialGL(
+                      $whereAccounts: AccountFilterInput
+                      $whereJournals: JournalEntryFilterInput
+                      $first: Int
+                    ) {
+                      accounts(where: $whereAccounts, first: $first) {
+                        nodes {
+                          id
+                          code
+                          name
+                          type
+                          balance
+                          currency
+                          isActive
+                        }
+                      }
+                      journalEntries(where: $whereJournals, first: $first) {
+                        nodes {
+                          id
+                          entryNumber
+                          entryDateUtc
+                          memo
+                          isPosted
+                          lines {
+                            id
+                            accountId
+                            debit
+                            credit
+                            memo
+                            account {
+                              code
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                """))
                 {
-                    Name = "adjust_stock"
-                },
-                new(Utf8GraphQLParser.Parse("mutation ($input: CreateSalesOrderInput!) { createSalesOrder(input: $input) { data { id orderNumber } success error } }"))
-                {
-                    Name = "create_sales_order"
-                },
-                new(Utf8GraphQLParser.Parse("mutation ($input: CreatePurchaseOrderInput!) { createPurchaseOrder(input: $input) { data { id poNumber } success error } }"))
-                {
-                    Name = "create_purchase_order"
-                },
-                new(Utf8GraphQLParser.Parse("mutation ($input: PostJournalEntryInput!) { postJournalEntry(input: $input) { data { id entryNumber } success error } }"))
-                {
-                    Name = "post_journal_entry"
+                    Name = "search_financial_gl"
                 }
             });
         }
