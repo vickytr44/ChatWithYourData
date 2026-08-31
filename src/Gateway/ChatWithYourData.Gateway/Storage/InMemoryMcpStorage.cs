@@ -20,204 +20,23 @@ public class InMemoryMcpStorage : IMcpStorage
         {
             _tools.AddRange(new OperationToolDefinition[]
             {
-                new(Utf8GraphQLParser.Parse("""
-                    query SearchSalesOrders(
-                      $where: SalesOrderFilterInput
-                      $order: [SalesOrderSortInput!]
-                      $first: Int
-                    ) {
-                      salesOrders(where: $where, order: $order, first: $first) {
-                        nodes {
-                          id
-                          orderNumber
-                          orderDateUtc
-                          status
-                          subtotal
-                          taxAmount
-                          totalAmount
-                          customer {
-                            id
-                            customerNumber
-                            name
-                            email
-                            phone
-                            billingAddress
-                          }
-                          lines {
-                            id
-                            quantity
-                            unitPrice
-                            subtotal
-                            product {
-                              id
-                              sku
-                              name
-                              unitPrice
-                            }
-                          }
-                        }
-                      }
-                    }
-                """))
+                new(Utf8GraphQLParser.Parse(OperationToolDocuments.SearchSalesOrders))
                 {
                     Name = "search_sales_orders"
                 },
-                new(Utf8GraphQLParser.Parse("""
-                    query SearchProductsAndInventory(
-                      $where: ProductFilterInput
-                      $order: [ProductSortInput!]
-                      $first: Int
-                    ) {
-                      products(where: $where, order: $order, first: $first) {
-                        nodes {
-                          id
-                          sku
-                          name
-                          description
-                          category
-                          unitPrice
-                          reorderPoint
-                          isActive
-                          stockItems {
-                            id
-                            warehouseId
-                            quantityOnHand
-                            allocatedQuantity
-                            availableQuantity
-                            warehouse {
-                              id
-                              name
-                              location
-                            }
-                          }
-                        }
-                      }
-                    }
-                """))
+                new(Utf8GraphQLParser.Parse(OperationToolDocuments.SearchProductsAndInventory))
                 {
                     Name = "search_products_and_inventory"
                 },
-                new(Utf8GraphQLParser.Parse("""
-                    query SearchInvoicesAndPayments(
-                      $where: InvoiceFilterInput
-                      $order: [InvoiceSortInput!]
-                      $first: Int
-                    ) {
-                      invoices(where: $where, order: $order, first: $first) {
-                        nodes {
-                          id
-                          invoiceNumber
-                          issueDateUtc
-                          dueDateUtc
-                          status
-                          subtotal
-                          taxAmount
-                          totalAmount
-                          paidAmount
-                          customer {
-                            id
-                            customerNumber
-                            name
-                            email
-                          }
-                          payments {
-                            id
-                            paymentNumber
-                            amount
-                            paymentDateUtc
-                            paymentMethod
-                            reference
-                          }
-                        }
-                      }
-                    }
-                """))
+                new(Utf8GraphQLParser.Parse(OperationToolDocuments.SearchInvoicesAndPayments))
                 {
                     Name = "search_invoices_and_payments"
                 },
-                new(Utf8GraphQLParser.Parse("""
-                    query SearchPurchaseOrders(
-                      $where: PurchaseOrderFilterInput
-                      $order: [PurchaseOrderSortInput!]
-                      $first: Int
-                    ) {
-                      purchaseOrders(where: $where, order: $order, first: $first) {
-                        nodes {
-                          id
-                          poNumber
-                          orderDateUtc
-                          expectedDeliveryDateUtc
-                          status
-                          totalCost
-                          vendor {
-                            id
-                            vendorNumber
-                            name
-                            email
-                          }
-                          lines {
-                            id
-                            quantity
-                            unitCost
-                            totalCost
-                            product {
-                              id
-                              sku
-                              name
-                            }
-                          }
-                          receipts {
-                            id
-                            receiptNumber
-                            receiptDateUtc
-                            status
-                          }
-                        }
-                      }
-                    }
-                """))
+                new(Utf8GraphQLParser.Parse(OperationToolDocuments.SearchPurchaseOrders))
                 {
                     Name = "search_purchase_orders"
                 },
-                new(Utf8GraphQLParser.Parse("""
-                    query SearchFinancialGL(
-                      $whereAccounts: AccountFilterInput
-                      $whereJournals: JournalEntryFilterInput
-                      $first: Int
-                    ) {
-                      accounts(where: $whereAccounts, first: $first) {
-                        nodes {
-                          id
-                          code
-                          name
-                          type
-                          balance
-                          currency
-                          isActive
-                        }
-                      }
-                      journalEntries(where: $whereJournals, first: $first) {
-                        nodes {
-                          id
-                          entryNumber
-                          entryDateUtc
-                          memo
-                          isPosted
-                          lines {
-                            id
-                            accountId
-                            debit
-                            credit
-                            memo
-                            account {
-                              code
-                              name
-                            }
-                          }
-                        }
-                      }
-                    }
-                """))
+                new(Utf8GraphQLParser.Parse(OperationToolDocuments.SearchFinancialGL))
                 {
                     Name = "search_financial_gl"
                 }
@@ -231,24 +50,13 @@ public class InMemoryMcpStorage : IMcpStorage
     }
 
     public ValueTask<IEnumerable<OperationToolDefinition>> GetOperationToolDefinitionsAsync(CancellationToken cancellationToken = default)
-    {
-        return ValueTask.FromResult<IEnumerable<OperationToolDefinition>>(_tools);
-    }
+        => ValueTask.FromResult<IEnumerable<OperationToolDefinition>>(_tools);
 
     public ValueTask<IEnumerable<PromptDefinition>> GetPromptDefinitionsAsync(CancellationToken cancellationToken = default)
-    {
-        return ValueTask.FromResult<IEnumerable<PromptDefinition>>(_prompts);
-    }
+        => ValueTask.FromResult<IEnumerable<PromptDefinition>>(_prompts);
 
-    public IDisposable Subscribe(IObserver<OperationToolStorageEventArgs> observer)
-    {
-        return EmptyDisposable.Instance;
-    }
-
-    public IDisposable Subscribe(IObserver<PromptStorageEventArgs> observer)
-    {
-        return EmptyDisposable.Instance;
-    }
+    public IDisposable Subscribe(IObserver<OperationToolStorageEventArgs> observer) => EmptyDisposable.Instance;
+    public IDisposable Subscribe(IObserver<PromptStorageEventArgs> observer) => EmptyDisposable.Instance;
 
     private sealed class EmptyDisposable : IDisposable
     {
