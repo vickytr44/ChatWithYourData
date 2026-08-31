@@ -165,12 +165,14 @@ public sealed class MockErpChatClient : IChatClient
         var replyText = GenerateResponse(lastMessage);
 
         var words = replyText.Split(' ');
+        var responseId = "msg-" + Guid.NewGuid().ToString("N");
         for (var i = 0; i < words.Length; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var chunk = (i == 0 ? "" : " ") + words[i];
             yield return new ChatResponseUpdate(ChatRole.Assistant, chunk)
             {
+                ResponseId = responseId,
                 ModelId = "mock-erp-gpt4o"
             };
             await Task.Delay(20, cancellationToken);

@@ -6,6 +6,7 @@
 - **API Gateway**: ChilliCream Fusion (Federated GraphQL Gateway)
 - **AI Agent & Protocol**: Microsoft Agent Framework (`Microsoft.Agents.AI`) with AG-UI Protocol (SSE-based Agent-User Interaction)
 - **Model Context Protocol (MCP)**: ChilliCream MCP Adapter (`HotChocolate.Fusion.Adapters.Mcp`) exposing GraphQL queries/mutations as MCP tools at `/graphql/mcp`
+- **Frontend Client**: Angular 22 (`src/Frontend/ChatWithYourData.Web`) with `@copilotkit/angular` & `@ag-ui/client`
 - **Architecture**: Clean Architecture & Microservices
 - **Methodology**: Test-Driven Development (TDD)
 - **Data Persistence**: Entity Framework Core 10 with SQLite (configurable to In-Memory for testing/local development)
@@ -32,6 +33,7 @@ Detailed technical specifications and guidelines are modularized into dedicated 
 ChatWithYourData/
 ├── AGENTS.md
 ├── run-services.bat
+├── run-frontend.bat
 ├── .github/
 │   └── workflows/
 │       └── schema-composition.yml
@@ -52,6 +54,8 @@ ChatWithYourData/
 │       ├── clean-architecture.md
 │       └── testing-tdd.md
 ├── src/
+│   ├── Frontend/
+│   │   └── ChatWithYourData.Web/
 │   ├── Gateway/
 │   │   └── ChatWithYourData.Gateway/
 │   └── Services/

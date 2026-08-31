@@ -1,4 +1,5 @@
 @echo off
+set ASPNETCORE_ENVIRONMENT=Development
 echo ======================================================================
 echo           Starting ChatWithYourData ERP Services (.NET 10)
 echo ======================================================================
@@ -29,18 +30,24 @@ start "ChatWithYourData - Gateway (Port 5000)" cmd /k "dotnet run --project src\
 
 timeout /t 3 /nobreak >nul
 
-echo [6/6] Starting ChatService (Microsoft Agents AI + AG-UI) on http://localhost:5005 ...
+echo [6/7] Starting ChatService (Microsoft Agents AI + AG-UI) on http://localhost:5005 ...
 start "ChatWithYourData - ChatService (Port 5005)" cmd /k "dotnet run --project src\Services\ChatWithYourData.ChatService\ChatWithYourData.ChatService.API\ChatWithYourData.ChatService.API.csproj"
+
+timeout /t 2 /nobreak >nul
+
+echo [7/7] Starting Angular Frontend (CopilotKit AG-UI Client) on http://localhost:4200 ...
+start "ChatWithYourData - Angular Frontend (Port 4200)" cmd /k "cd src\Frontend\ChatWithYourData.Web && npm start"
 
 echo.
 echo ======================================================================
-echo All 6 services launched in separate terminal windows!
+echo All 7 services launched in separate terminal windows!
 echo - Gateway (GraphQL + MCP): http://localhost:5000/graphql ^| http://localhost:5000/graphql/mcp
 echo - Inventory Service:      http://localhost:5001/graphql
 echo - Sales Service:          http://localhost:5002/graphql
 echo - Procurement Service:    http://localhost:5003/graphql
 echo - Finance Service:        http://localhost:5004/graphql
 echo - ChatService (AG-UI):    http://localhost:5005/ag-ui ^| http://localhost:5005
+echo - Angular Frontend:       http://localhost:4200
 echo ======================================================================
 echo.
 pause

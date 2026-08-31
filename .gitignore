@@ -45,4 +45,9 @@ secrets.json
 appsettings.Development.json
 appsettings.*.Development.json
 appsettings.local.json
-appsettings.*.local.json
+## Frontend & Node
+node_modules/
+dist/
+.angular/
+.npm/
+npm-debug.log*
