@@ -15,11 +15,11 @@ type Query {
     before: String
     where: ProductFilterInput @cost(weight: "10")
     order: [ProductSortInput!] @cost(weight: "10")
-  ): ProductsConnection
+  ): ProductConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
@@ -36,15 +36,16 @@ type Query {
     before: String
     where: CategoryFilterInput @cost(weight: "10")
     order: [CategorySortInput!] @cost(weight: "10")
-  ): CategoriesConnection
+  ): CategoryConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
     @cost(weight: "10")
+  categoryById(id: UUID!): Category @lookup @cost(weight: "10")
   warehouses(
     "Returns the first _n_ elements from the list."
     first: Int
@@ -56,11 +57,11 @@ type Query {
     before: String
     where: WarehouseFilterInput @cost(weight: "10")
     order: [WarehouseSortInput!] @cost(weight: "10")
-  ): WarehousesConnection
+  ): WarehouseConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
@@ -76,70 +77,102 @@ type Query {
     before: String
     where: StockItemFilterInput @cost(weight: "10")
     order: [StockItemSortInput!] @cost(weight: "10")
-  ): StockItemsConnection
+  ): StockItemConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
     @cost(weight: "10")
-  lowStockAlerts(where: StockItemFilterInput @cost(weight: "10")): [StockItem!]!
+  stockItemById(id: UUID!): StockItem @lookup @cost(weight: "10")
+  lowStockAlerts(
+    "Returns the first _n_ elements from the list."
+    first: Int
+    "Returns the elements in the list that come after the specified cursor."
+    after: String
+    "Returns the last _n_ elements from the list."
+    last: Int
+    "Returns the elements in the list that come before the specified cursor."
+    before: String
+    where: StockItemFilterInput @cost(weight: "10")
+  ): StockItemConnection!
+    @listSize(
+      assumedSize: 150
+      slicingArguments: ["first", "last"]
+      slicingArgumentDefaultValue: 25
+      sizedFields: ["edges", "nodes"]
+      requireOneSlicingArgument: false
+    )
     @cost(weight: "10")
 }
 
 type Mutation {
-  createProduct(input: CreateProductInput!): MutationPayloadOfProductDto!
+  createProduct(input: CreateProductInput!): CreateProductPayload!
     @cost(weight: "10")
-  adjustStock(input: AdjustStockInput!): MutationPayloadOfStockItemDto!
-    @cost(weight: "10")
+  adjustStock(input: AdjustStockInput!): AdjustStockPayload! @cost(weight: "10")
 }
 
-"A connection to a list of items."
-type CategoriesConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [CategoriesEdge!]
-  "A flattened list of the nodes."
-  nodes: [Category!]
+type AdjustStockPayload {
+  stockItem: StockItem
+  errors: [AdjustStockError!]
 }
 
-"An edge in a connection."
-type CategoriesEdge {
-  "A cursor for use in pagination."
-  cursor: String!
-  "The item at the end of the edge."
-  node: Category!
-}
-
-type Category {
+type Category @key(fields: "id") {
   name: String!
   description: String
   parentCategoryId: UUID
-  parentCategory: Category
-  subCategories: [Category!]!
-  products: [Product!]!
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
-type MutationPayloadOfProductDto {
-  success: Boolean!
-  data: ProductDto
-  error: String
+"A connection to a list of items."
+type CategoryConnection @shareable {
+  "A list of edges."
+  edges: [CategoryEdge!]
+  "A flattened list of the nodes"
+  nodes: [Category!]
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-type MutationPayloadOfStockItemDto {
-  success: Boolean!
-  data: StockItemDto
-  error: String
+type CategoryEdge @shareable {
+  "The item at the end of the edge."
+  node: Category!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+type CreateProductPayload {
+  product: Product
+  errors: [CreateProductError!]
+}
+
+type DuplicateSkuError implements Error {
+  message: String!
+  sku: String!
+}
+
+type InsufficientStockError implements Error {
+  message: String!
+  currentStock: Int!
+  requestedDelta: Int!
+}
+
+"A cursor that points to a specific page."
+type PageCursor @shareable {
+  "The page number."
+  page: Int!
+  "The cursor."
+  cursor: String!
 }
 
 "Information about pagination in a connection."
-type PageInfo {
+type PageInfo @shareable {
   "Indicates whether more edges exist following the set defined by the clients arguments."
   hasNextPage: Boolean!
   "Indicates whether more edges exist prior the set defined by the clients arguments."
@@ -148,12 +181,15 @@ type PageInfo {
   startCursor: String
   "When paginating forwards, the cursor to continue."
   endCursor: String
+  "A list of cursors to continue paginating forwards."
+  forwardCursors: [PageCursor!]!
+  "A list of cursors to continue paginating backwards."
+  backwardCursors: [PageCursor!]!
 }
 
-"Represents a product within the inventory catalog."
-type Product {
-  "The category the product belongs to (resolved via DataLoader)."
+type Product @key(fields: "id") {
   category: Category @cost(weight: "10")
+  stockItems: [StockItem!]! @cost(weight: "10")
   sku: String!
   name: String!
   description: String!
@@ -161,62 +197,37 @@ type Product {
   unitOfMeasure: String!
   isActive: Boolean!
   categoryId: UUID!
-  stockItems: [StockItem!]!
-  stockAdjustments: [StockAdjustment!]!
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
-}
-
-type ProductDto {
-  id: UUID!
-  sku: String!
-  name: String!
-  description: String!
-  unitPrice: Decimal!
-  unitOfMeasure: String!
-  isActive: Boolean!
-  categoryId: UUID!
-  createdAtUtc: DateTime!
 }
 
 "A connection to a list of items."
-type ProductsConnection {
+type ProductConnection @shareable {
+  "A list of edges."
+  edges: [ProductEdge!]
+  "A flattened list of the nodes"
+  nodes: [Product!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [ProductsEdge!]
-  "A flattened list of the nodes."
-  nodes: [Product!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type ProductsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type ProductEdge @shareable {
   "The item at the end of the edge."
   node: Product!
+  "A cursor for use in pagination."
+  cursor: String!
 }
 
-type StockAdjustment {
+type ProductNotFoundError implements Error {
+  message: String!
   productId: UUID!
-  warehouseId: UUID!
-  quantityDelta: Int!
-  reason: AdjustmentReason!
-  notes: String!
-  adjustedAtUtc: DateTime!
-  product: Product
-  warehouse: Warehouse
-  id: UUID!
-  createdAtUtc: DateTime!
-  updatedAtUtc: DateTime
 }
 
-"Represents stock level for a product in a warehouse."
-type StockItem {
-  "The product associated with this stock item (resolved via DataLoader)."
+type StockItem @key(fields: "id") {
   product: Product @cost(weight: "10")
-  "The warehouse storing this stock item (resolved via DataLoader)."
   warehouse: Warehouse @cost(weight: "10")
   productId: UUID!
   warehouseId: UUID!
@@ -228,31 +239,29 @@ type StockItem {
   updatedAtUtc: DateTime
 }
 
-type StockItemDto {
-  id: UUID!
-  productId: UUID!
-  warehouseId: UUID!
-  quantityOnHand: Int!
-  quantityReserved: Int!
-  reorderPoint: Int!
-}
-
 "A connection to a list of items."
-type StockItemsConnection {
+type StockItemConnection @shareable {
+  "A list of edges."
+  edges: [StockItemEdge!]
+  "A flattened list of the nodes"
+  nodes: [StockItem!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [StockItemsEdge!]
-  "A flattened list of the nodes."
-  nodes: [StockItem!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type StockItemsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type StockItemEdge @shareable {
   "The item at the end of the edge."
   node: StockItem!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+type UninitializedStockError implements Error {
+  message: String!
+  productId: UUID!
+  warehouseId: UUID!
 }
 
 type Warehouse {
@@ -260,36 +269,46 @@ type Warehouse {
   name: String!
   locationAddress: String!
   isActive: Boolean!
-  stockItems: [StockItem!]!
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
 "A connection to a list of items."
-type WarehousesConnection {
+type WarehouseConnection @shareable {
+  "A list of edges."
+  edges: [WarehouseEdge!]
+  "A flattened list of the nodes"
+  nodes: [Warehouse!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [WarehousesEdge!]
-  "A flattened list of the nodes."
-  nodes: [Warehouse!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type WarehousesEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type WarehouseEdge @shareable {
   "The item at the end of the edge."
   node: Warehouse!
+  "A cursor for use in pagination."
+  cursor: String!
 }
 
-input AdjustmentReasonOperationFilterInput {
-  eq: AdjustmentReason @cost(weight: "10")
-  neq: AdjustmentReason @cost(weight: "10")
-  in: [AdjustmentReason!] @cost(weight: "10")
-  nin: [AdjustmentReason!] @cost(weight: "10")
+type WarehouseNotFoundError implements Error {
+  message: String!
+  warehouseId: UUID!
 }
+
+interface Error {
+  message: String!
+}
+
+union AdjustStockError =
+  | ProductNotFoundError
+  | WarehouseNotFoundError
+  | InsufficientStockError
+  | UninitializedStockError
+
+union CreateProductError = DuplicateSkuError
 
 input AdjustStockInput {
   productId: UUID!
@@ -308,24 +327,11 @@ input CategoryFilterInput {
   and: [CategoryFilterInput!]
   or: [CategoryFilterInput!]
   name: StringOperationFilterInput
-  description: StringOperationFilterInput
   parentCategoryId: UuidOperationFilterInput
-  parentCategory: CategoryFilterInput
-  subCategories: ListFilterInputTypeOfCategoryFilterInput
-  products: ListFilterInputTypeOfProductFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input CategorySortInput {
   name: SortEnumType @cost(weight: "10")
-  description: SortEnumType @cost(weight: "10")
-  parentCategoryId: SortEnumType @cost(weight: "10")
-  parentCategory: CategorySortInput @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
 }
 
 input CreateProductInput {
@@ -335,36 +341,6 @@ input CreateProductInput {
   unitPrice: Decimal!
   unitOfMeasure: String!
   categoryId: UUID!
-}
-
-input DateTimeOperationFilterInput {
-  eq: DateTime @cost(weight: "10")
-  neq: DateTime @cost(weight: "10")
-  in: [DateTime] @cost(weight: "10")
-  nin: [DateTime] @cost(weight: "10")
-  gt: DateTime @cost(weight: "10")
-  ngt: DateTime @cost(weight: "10")
-  gte: DateTime @cost(weight: "10")
-  ngte: DateTime @cost(weight: "10")
-  lt: DateTime @cost(weight: "10")
-  nlt: DateTime @cost(weight: "10")
-  lte: DateTime @cost(weight: "10")
-  nlte: DateTime @cost(weight: "10")
-}
-
-input DecimalOperationFilterInput {
-  eq: Decimal @cost(weight: "10")
-  neq: Decimal @cost(weight: "10")
-  in: [Decimal] @cost(weight: "10")
-  nin: [Decimal] @cost(weight: "10")
-  gt: Decimal @cost(weight: "10")
-  ngt: Decimal @cost(weight: "10")
-  gte: Decimal @cost(weight: "10")
-  ngte: Decimal @cost(weight: "10")
-  lt: Decimal @cost(weight: "10")
-  nlt: Decimal @cost(weight: "10")
-  lte: Decimal @cost(weight: "10")
-  nlte: Decimal @cost(weight: "10")
 }
 
 input IntOperationFilterInput {
@@ -382,80 +358,20 @@ input IntOperationFilterInput {
   nlte: Int @cost(weight: "10")
 }
 
-input ListFilterInputTypeOfCategoryFilterInput {
-  all: CategoryFilterInput @cost(weight: "10")
-  none: CategoryFilterInput @cost(weight: "10")
-  some: CategoryFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListFilterInputTypeOfProductFilterInput {
-  all: ProductFilterInput @cost(weight: "10")
-  none: ProductFilterInput @cost(weight: "10")
-  some: ProductFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListFilterInputTypeOfStockAdjustmentFilterInput {
-  all: StockAdjustmentFilterInput @cost(weight: "10")
-  none: StockAdjustmentFilterInput @cost(weight: "10")
-  some: StockAdjustmentFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListFilterInputTypeOfStockItemFilterInput {
-  all: StockItemFilterInput @cost(weight: "10")
-  none: StockItemFilterInput @cost(weight: "10")
-  some: StockItemFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
 input ProductFilterInput {
   and: [ProductFilterInput!]
   or: [ProductFilterInput!]
-  sku: StringOperationFilterInput
   name: StringOperationFilterInput
-  description: StringOperationFilterInput
-  unitPrice: DecimalOperationFilterInput
-  unitOfMeasure: StringOperationFilterInput
+  sku: StringOperationFilterInput
   isActive: BooleanOperationFilterInput
   categoryId: UuidOperationFilterInput
-  category: CategoryFilterInput
-  stockItems: ListFilterInputTypeOfStockItemFilterInput
-  stockAdjustments: ListFilterInputTypeOfStockAdjustmentFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input ProductSortInput {
-  sku: SortEnumType @cost(weight: "10")
   name: SortEnumType @cost(weight: "10")
-  description: SortEnumType @cost(weight: "10")
+  sku: SortEnumType @cost(weight: "10")
   unitPrice: SortEnumType @cost(weight: "10")
-  unitOfMeasure: SortEnumType @cost(weight: "10")
-  isActive: SortEnumType @cost(weight: "10")
-  categoryId: SortEnumType @cost(weight: "10")
-  category: CategorySortInput @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
   createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
-}
-
-input StockAdjustmentFilterInput {
-  and: [StockAdjustmentFilterInput!]
-  or: [StockAdjustmentFilterInput!]
-  productId: UuidOperationFilterInput
-  warehouseId: UuidOperationFilterInput
-  quantityDelta: IntOperationFilterInput
-  reason: AdjustmentReasonOperationFilterInput
-  notes: StringOperationFilterInput
-  adjustedAtUtc: DateTimeOperationFilterInput
-  product: ProductFilterInput
-  warehouse: WarehouseFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input StockItemFilterInput {
@@ -464,26 +380,12 @@ input StockItemFilterInput {
   productId: UuidOperationFilterInput
   warehouseId: UuidOperationFilterInput
   quantityOnHand: IntOperationFilterInput
-  quantityReserved: IntOperationFilterInput
   reorderPoint: IntOperationFilterInput
-  product: ProductFilterInput
-  warehouse: WarehouseFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input StockItemSortInput {
-  productId: SortEnumType @cost(weight: "10")
-  warehouseId: SortEnumType @cost(weight: "10")
   quantityOnHand: SortEnumType @cost(weight: "10")
-  quantityReserved: SortEnumType @cost(weight: "10")
   reorderPoint: SortEnumType @cost(weight: "10")
-  product: ProductSortInput @cost(weight: "10")
-  warehouse: WarehouseSortInput @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
 }
 
 input StringOperationFilterInput {
@@ -519,24 +421,14 @@ input UuidOperationFilterInput {
 input WarehouseFilterInput {
   and: [WarehouseFilterInput!]
   or: [WarehouseFilterInput!]
-  code: StringOperationFilterInput
   name: StringOperationFilterInput
-  locationAddress: StringOperationFilterInput
+  code: StringOperationFilterInput
   isActive: BooleanOperationFilterInput
-  stockItems: ListFilterInputTypeOfStockItemFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input WarehouseSortInput {
-  code: SortEnumType @cost(weight: "10")
   name: SortEnumType @cost(weight: "10")
-  locationAddress: SortEnumType @cost(weight: "10")
-  isActive: SortEnumType @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
+  code: SortEnumType @cost(weight: "10")
 }
 
 enum AdjustmentReason {
@@ -548,6 +440,15 @@ enum AdjustmentReason {
   TRANSFER
 }
 
+enum ScalarSerializationType {
+  STRING
+  BOOLEAN
+  INT
+  FLOAT
+  OBJECT
+  LIST
+}
+
 enum SortEnumType {
   ASC
   DESC
@@ -555,14 +456,25 @@ enum SortEnumType {
 
 "The `DateTime` scalar type represents a date and time with time zone offset information."
 scalar DateTime
+  @serializeAs(
+    type: STRING
+    pattern: "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:[Zz]|[+-]\\d{2}:\\d{2})$"
+  )
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/date-time.html")
 
 "The `Decimal` scalar type represents a decimal floating-point number with high precision."
 scalar Decimal
+  @serializeAs(type: FLOAT)
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/decimal.html")
+
+scalar FieldSelectionSet
 
 "The `UUID` scalar type represents a Universally Unique Identifier (UUID) as defined by RFC 9562."
 scalar UUID
+  @serializeAs(
+    type: STRING
+    pattern: "^[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}$"
+  )
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/uuid.html")
 
 "The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
@@ -576,6 +488,15 @@ directive @cost(
   | ARGUMENT_DEFINITION
   | ENUM
   | INPUT_FIELD_DEFINITION
+
+"""
+The @key directive is used to designate an entity's unique key,
+which identifies how to uniquely reference an instance of
+an entity across different source schemas.
+"""
+directive @key("The field selection set syntax." fields: FieldSelectionSet!) repeatable on
+  | OBJECT
+  | INTERFACE
 
 "The purpose of the `@listSize` directive is to either inform the static analysis about the size of returned lists (if that information is statically available), or to point the analysis to where to find that information."
 directive @listSize(
@@ -597,3 +518,12 @@ that can be used by the distributed GraphQL executor to resolve an entity by
 a stable key.
 """
 directive @lookup on FIELD_DEFINITION
+
+directive @serializeAs(
+  "The primitive type a scalar is serialized to."
+  type: [ScalarSerializationType!]!
+  "The ECMA-262 regex pattern that the serialized scalar value conforms to."
+  pattern: String
+) on SCALAR
+
+directive @shareable repeatable on OBJECT | FIELD_DEFINITION

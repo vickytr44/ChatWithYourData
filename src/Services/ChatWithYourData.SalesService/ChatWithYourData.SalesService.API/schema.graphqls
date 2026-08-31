@@ -154,7 +154,7 @@ type PageInfo @shareable {
 }
 
 type Product {
-  id: ID!
+  id: UUID!
 }
 
 type SalesOrder @key(fields: "id") {

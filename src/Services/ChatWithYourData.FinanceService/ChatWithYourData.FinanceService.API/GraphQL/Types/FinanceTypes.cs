@@ -17,7 +17,7 @@ internal static partial class CustomerEntityStubNode
 {
     static partial void Configure(IObjectTypeDescriptor<CustomerEntityStub> descriptor)
     {
-        descriptor.Field(c => c.Id).Type<NonNullType<IdType>>();
+        descriptor.Field(c => c.Id).Type<NonNullType<UuidType>>();
     }
 }
 

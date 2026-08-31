@@ -32,6 +32,17 @@ Detailed technical specifications and guidelines are modularized into dedicated 
 ChatWithYourData/
 ├── AGENTS.md
 ├── run-services.bat
+├── .github/
+│   └── workflows/
+│       └── schema-composition.yml
+├── scripts/
+│   ├── export-schemas.ps1
+│   └── update-gateway.ps1
+├── subgraphs/
+│   ├── inventory/
+│   ├── sales/
+│   ├── procurement/
+│   └── finance/
 ├── docs/
 │   ├── architecture/
 │   │   ├── microservices.md

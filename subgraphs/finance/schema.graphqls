@@ -15,11 +15,11 @@ type Query {
     before: String
     where: AccountFilterInput @cost(weight: "10")
     order: [AccountSortInput!] @cost(weight: "10")
-  ): AccountsConnection
+  ): AccountConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
@@ -37,15 +37,16 @@ type Query {
     before: String
     where: JournalEntryFilterInput @cost(weight: "10")
     order: [JournalEntrySortInput!] @cost(weight: "10")
-  ): JournalEntriesConnection
+  ): JournalEntryConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
     @cost(weight: "10")
+  journalEntryById(id: UUID!): JournalEntry @lookup @cost(weight: "10")
   invoices(
     "Returns the first _n_ elements from the list."
     first: Int
@@ -57,11 +58,11 @@ type Query {
     before: String
     where: InvoiceFilterInput @cost(weight: "10")
     order: [InvoiceSortInput!] @cost(weight: "10")
-  ): InvoicesConnection
+  ): InvoiceConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
@@ -77,88 +78,73 @@ type Query {
     before: String
     where: PaymentFilterInput @cost(weight: "10")
     order: [PaymentSortInput!] @cost(weight: "10")
-  ): PaymentsConnection
+  ): PaymentConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
     @cost(weight: "10")
+  paymentById(id: UUID!): Payment @lookup @cost(weight: "10")
 }
 
 type Mutation {
-  createAccount(input: CreateAccountInput!): FinanceMutationPayloadOfAccountDto!
+  createAccount(input: CreateAccountInput!): CreateAccountPayload!
     @cost(weight: "10")
-  postJournalEntry(input: PostJournalEntryInput!): FinanceMutationPayloadOfJournalEntryDto!
+  postJournalEntry(input: PostJournalEntryInput!): PostJournalEntryPayload!
     @cost(weight: "10")
 }
 
-type Account {
+type Account @key(fields: "id") {
   accountCode: String!
   name: String!
   type: AccountType!
   description: String!
   currentBalance: Decimal!
   isActive: Boolean!
-  journalLines: [JournalLine!]!
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
-type AccountDto {
-  id: UUID!
+type AccountCodeAlreadyExistsError implements Error {
+  message: String!
   accountCode: String!
-  name: String!
-  type: AccountType!
-  description: String!
-  currentBalance: Decimal!
-  isActive: Boolean!
-  createdAtUtc: DateTime!
 }
 
 "A connection to a list of items."
-type AccountsConnection {
+type AccountConnection @shareable {
+  "A list of edges."
+  edges: [AccountEdge!]
+  "A flattened list of the nodes"
+  nodes: [Account!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [AccountsEdge!]
-  "A flattened list of the nodes."
-  nodes: [Account!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type AccountsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type AccountEdge @shareable {
   "The item at the end of the edge."
   node: Account!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+type CreateAccountPayload {
+  account: Account
+  errors: [CreateAccountError!]
 }
 
 type Customer {
   id: UUID!
 }
 
-type FinanceMutationPayloadOfAccountDto {
-  success: Boolean!
-  data: AccountDto
-  error: String
-}
-
-type FinanceMutationPayloadOfJournalEntryDto {
-  success: Boolean!
-  data: JournalEntryDto
-  error: String
-}
-
-"Represents a customer invoice."
-type Invoice {
-  "The payments applied to this invoice (resolved via DataLoader)."
+type Invoice @key(fields: "id") {
+  customer: Customer
   payments: [Payment!]! @cost(weight: "10")
-  "The customer associated with this invoice (stitched from SalesService)."
-  customer: Customer @cost(weight: "10")
   invoiceNumber: String!
   customerId: UUID
   salesOrderId: UUID
@@ -176,44 +162,25 @@ type Invoice {
 }
 
 "A connection to a list of items."
-type InvoicesConnection {
+type InvoiceConnection @shareable {
+  "A list of edges."
+  edges: [InvoiceEdge!]
+  "A flattened list of the nodes"
+  nodes: [Invoice!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [InvoicesEdge!]
-  "A flattened list of the nodes."
-  nodes: [Invoice!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type InvoicesEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type InvoiceEdge @shareable {
   "The item at the end of the edge."
   node: Invoice!
-}
-
-"A connection to a list of items."
-type JournalEntriesConnection {
-  "Information to aid in pagination."
-  pageInfo: PageInfo!
-  "A list of edges."
-  edges: [JournalEntriesEdge!]
-  "A flattened list of the nodes."
-  nodes: [JournalEntry!]
-}
-
-"An edge in a connection."
-type JournalEntriesEdge {
   "A cursor for use in pagination."
   cursor: String!
-  "The item at the end of the edge."
-  node: JournalEntry!
 }
 
-"Represents a posted or draft journal entry in the general ledger."
-type JournalEntry {
-  "The debit and credit lines for this entry (resolved via DataLoader)."
+type JournalEntry @key(fields: "id") {
   lines: [JournalLine!]! @cost(weight: "10")
   entryNumber: String!
   entryDateUtc: DateTime!
@@ -225,40 +192,47 @@ type JournalEntry {
   updatedAtUtc: DateTime
 }
 
-type JournalEntryDto {
-  id: UUID!
-  entryNumber: String!
-  entryDateUtc: DateTime!
-  description: String!
-  reference: String!
-  isPosted: Boolean!
-  lines: [JournalLineDto!]!
+"A connection to a list of items."
+type JournalEntryConnection @shareable {
+  "A list of edges."
+  edges: [JournalEntryEdge!]
+  "A flattened list of the nodes"
+  nodes: [JournalEntry!]
+  "Information to aid in pagination."
+  pageInfo: PageInfo!
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
+}
+
+type JournalEntryEdge @shareable {
+  "The item at the end of the edge."
+  node: JournalEntry!
+  "A cursor for use in pagination."
+  cursor: String!
 }
 
 type JournalLine {
+  account: Account @cost(weight: "10")
   journalEntryId: UUID!
   accountId: UUID!
   debitAmount: Decimal!
   creditAmount: Decimal!
   memo: String!
-  journalEntry: JournalEntry
-  account: Account
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
-type JournalLineDto {
-  id: UUID!
-  journalEntryId: UUID!
-  accountId: UUID!
-  debitAmount: Decimal!
-  creditAmount: Decimal!
-  memo: String!
+"A cursor that points to a specific page."
+type PageCursor @shareable {
+  "The page number."
+  page: Int!
+  "The cursor."
+  cursor: String!
 }
 
 "Information about pagination in a connection."
-type PageInfo {
+type PageInfo @shareable {
   "Indicates whether more edges exist following the set defined by the clients arguments."
   hasNextPage: Boolean!
   "Indicates whether more edges exist prior the set defined by the clients arguments."
@@ -267,38 +241,62 @@ type PageInfo {
   startCursor: String
   "When paginating forwards, the cursor to continue."
   endCursor: String
+  "A list of cursors to continue paginating forwards."
+  forwardCursors: [PageCursor!]!
+  "A list of cursors to continue paginating backwards."
+  backwardCursors: [PageCursor!]!
 }
 
-type Payment {
+type Payment @key(fields: "id") {
+  invoice: Invoice @cost(weight: "10")
   invoiceId: UUID!
   paymentNumber: String!
   paymentDateUtc: DateTime!
   amount: Decimal!
   method: PaymentMethod!
   referenceNumber: String!
-  invoice: Invoice
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
 "A connection to a list of items."
-type PaymentsConnection {
+type PaymentConnection @shareable {
+  "A list of edges."
+  edges: [PaymentEdge!]
+  "A flattened list of the nodes"
+  nodes: [Payment!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [PaymentsEdge!]
-  "A flattened list of the nodes."
-  nodes: [Payment!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type PaymentsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type PaymentEdge @shareable {
   "The item at the end of the edge."
   node: Payment!
+  "A cursor for use in pagination."
+  cursor: String!
 }
+
+type PostJournalEntryPayload {
+  journalEntry: JournalEntry
+  errors: [PostJournalEntryError!]
+}
+
+type UnbalancedJournalEntryError implements Error {
+  message: String!
+  totalDebits: Decimal!
+  totalCredits: Decimal!
+}
+
+interface Error {
+  message: String!
+}
+
+union CreateAccountError = AccountCodeAlreadyExistsError
+
+union PostJournalEntryError = UnbalancedJournalEntryError
 
 input AccountFilterInput {
   and: [AccountFilterInput!]
@@ -306,25 +304,13 @@ input AccountFilterInput {
   accountCode: StringOperationFilterInput
   name: StringOperationFilterInput
   type: AccountTypeOperationFilterInput
-  description: StringOperationFilterInput
-  currentBalance: DecimalOperationFilterInput
   isActive: BooleanOperationFilterInput
-  journalLines: ListFilterInputTypeOfJournalLineFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input AccountSortInput {
   accountCode: SortEnumType @cost(weight: "10")
   name: SortEnumType @cost(weight: "10")
-  type: SortEnumType @cost(weight: "10")
-  description: SortEnumType @cost(weight: "10")
   currentBalance: SortEnumType @cost(weight: "10")
-  isActive: SortEnumType @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
 }
 
 input AccountTypeOperationFilterInput {
@@ -369,56 +355,19 @@ input DateTimeOperationFilterInput {
   nlte: DateTime @cost(weight: "10")
 }
 
-input DecimalOperationFilterInput {
-  eq: Decimal @cost(weight: "10")
-  neq: Decimal @cost(weight: "10")
-  in: [Decimal] @cost(weight: "10")
-  nin: [Decimal] @cost(weight: "10")
-  gt: Decimal @cost(weight: "10")
-  ngt: Decimal @cost(weight: "10")
-  gte: Decimal @cost(weight: "10")
-  ngte: Decimal @cost(weight: "10")
-  lt: Decimal @cost(weight: "10")
-  nlt: Decimal @cost(weight: "10")
-  lte: Decimal @cost(weight: "10")
-  nlte: Decimal @cost(weight: "10")
-}
-
 input InvoiceFilterInput {
   and: [InvoiceFilterInput!]
   or: [InvoiceFilterInput!]
   invoiceNumber: StringOperationFilterInput
   customerId: UuidOperationFilterInput
-  salesOrderId: UuidOperationFilterInput
-  issueDateUtc: DateTimeOperationFilterInput
-  dueDateUtc: DateTimeOperationFilterInput
-  subtotal: DecimalOperationFilterInput
-  taxAmount: DecimalOperationFilterInput
-  totalAmount: DecimalOperationFilterInput
-  paidAmount: DecimalOperationFilterInput
   status: InvoiceStatusOperationFilterInput
-  notes: StringOperationFilterInput
-  payments: ListFilterInputTypeOfPaymentFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
+  dueDateUtc: DateTimeOperationFilterInput
 }
 
 input InvoiceSortInput {
   invoiceNumber: SortEnumType @cost(weight: "10")
-  customerId: SortEnumType @cost(weight: "10")
-  salesOrderId: SortEnumType @cost(weight: "10")
   issueDateUtc: SortEnumType @cost(weight: "10")
-  dueDateUtc: SortEnumType @cost(weight: "10")
-  subtotal: SortEnumType @cost(weight: "10")
-  taxAmount: SortEnumType @cost(weight: "10")
   totalAmount: SortEnumType @cost(weight: "10")
-  paidAmount: SortEnumType @cost(weight: "10")
-  status: SortEnumType @cost(weight: "10")
-  notes: SortEnumType @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
 }
 
 input InvoiceStatusOperationFilterInput {
@@ -433,53 +382,12 @@ input JournalEntryFilterInput {
   or: [JournalEntryFilterInput!]
   entryNumber: StringOperationFilterInput
   entryDateUtc: DateTimeOperationFilterInput
-  description: StringOperationFilterInput
-  reference: StringOperationFilterInput
   isPosted: BooleanOperationFilterInput
-  lines: ListFilterInputTypeOfJournalLineFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input JournalEntrySortInput {
   entryNumber: SortEnumType @cost(weight: "10")
   entryDateUtc: SortEnumType @cost(weight: "10")
-  description: SortEnumType @cost(weight: "10")
-  reference: SortEnumType @cost(weight: "10")
-  isPosted: SortEnumType @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
-}
-
-input JournalLineFilterInput {
-  and: [JournalLineFilterInput!]
-  or: [JournalLineFilterInput!]
-  journalEntryId: UuidOperationFilterInput
-  accountId: UuidOperationFilterInput
-  debitAmount: DecimalOperationFilterInput
-  creditAmount: DecimalOperationFilterInput
-  memo: StringOperationFilterInput
-  journalEntry: JournalEntryFilterInput
-  account: AccountFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
-}
-
-input ListFilterInputTypeOfJournalLineFilterInput {
-  all: JournalLineFilterInput @cost(weight: "10")
-  none: JournalLineFilterInput @cost(weight: "10")
-  some: JournalLineFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListFilterInputTypeOfPaymentFilterInput {
-  all: PaymentFilterInput @cost(weight: "10")
-  none: PaymentFilterInput @cost(weight: "10")
-  some: PaymentFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
 }
 
 input PaymentFilterInput {
@@ -487,14 +395,7 @@ input PaymentFilterInput {
   or: [PaymentFilterInput!]
   invoiceId: UuidOperationFilterInput
   paymentNumber: StringOperationFilterInput
-  paymentDateUtc: DateTimeOperationFilterInput
-  amount: DecimalOperationFilterInput
   method: PaymentMethodOperationFilterInput
-  referenceNumber: StringOperationFilterInput
-  invoice: InvoiceFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input PaymentMethodOperationFilterInput {
@@ -505,16 +406,9 @@ input PaymentMethodOperationFilterInput {
 }
 
 input PaymentSortInput {
-  invoiceId: SortEnumType @cost(weight: "10")
   paymentNumber: SortEnumType @cost(weight: "10")
   paymentDateUtc: SortEnumType @cost(weight: "10")
   amount: SortEnumType @cost(weight: "10")
-  method: SortEnumType @cost(weight: "10")
-  referenceNumber: SortEnumType @cost(weight: "10")
-  invoice: InvoiceSortInput @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
 }
 
 input PostJournalEntryInput {
@@ -578,6 +472,15 @@ enum PaymentMethod {
   CASH
 }
 
+enum ScalarSerializationType {
+  STRING
+  BOOLEAN
+  INT
+  FLOAT
+  OBJECT
+  LIST
+}
+
 enum SortEnumType {
   ASC
   DESC
@@ -585,14 +488,25 @@ enum SortEnumType {
 
 "The `DateTime` scalar type represents a date and time with time zone offset information."
 scalar DateTime
+  @serializeAs(
+    type: STRING
+    pattern: "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:[Zz]|[+-]\\d{2}:\\d{2})$"
+  )
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/date-time.html")
 
 "The `Decimal` scalar type represents a decimal floating-point number with high precision."
 scalar Decimal
+  @serializeAs(type: FLOAT)
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/decimal.html")
+
+scalar FieldSelectionSet
 
 "The `UUID` scalar type represents a Universally Unique Identifier (UUID) as defined by RFC 9562."
 scalar UUID
+  @serializeAs(
+    type: STRING
+    pattern: "^[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}$"
+  )
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/uuid.html")
 
 "The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
@@ -606,6 +520,15 @@ directive @cost(
   | ARGUMENT_DEFINITION
   | ENUM
   | INPUT_FIELD_DEFINITION
+
+"""
+The @key directive is used to designate an entity's unique key,
+which identifies how to uniquely reference an instance of
+an entity across different source schemas.
+"""
+directive @key("The field selection set syntax." fields: FieldSelectionSet!) repeatable on
+  | OBJECT
+  | INTERFACE
 
 "The purpose of the `@listSize` directive is to either inform the static analysis about the size of returned lists (if that information is statically available), or to point the analysis to where to find that information."
 directive @listSize(
@@ -627,3 +550,12 @@ that can be used by the distributed GraphQL executor to resolve an entity by
 a stable key.
 """
 directive @lookup on FIELD_DEFINITION
+
+directive @serializeAs(
+  "The primitive type a scalar is serialized to."
+  type: [ScalarSerializationType!]!
+  "The ECMA-262 regex pattern that the serialized scalar value conforms to."
+  pattern: String
+) on SCALAR
+
+directive @shareable repeatable on OBJECT | FIELD_DEFINITION

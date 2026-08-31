@@ -1,3 +1,6 @@
+Get-Process -Name "ChatWithYourData*" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+Start-Sleep -Seconds 1
+
 $invProc = Start-Process -FilePath "dotnet" -ArgumentList "run --project src/Services/ChatWithYourData.InventoryService/ChatWithYourData.InventoryService.API/ChatWithYourData.InventoryService.API.csproj" -PassThru
 $salesProc = Start-Process -FilePath "dotnet" -ArgumentList "run --project src/Services/ChatWithYourData.SalesService/ChatWithYourData.SalesService.API/ChatWithYourData.SalesService.API.csproj" -PassThru
 $procProc = Start-Process -FilePath "dotnet" -ArgumentList "run --project src/Services/ChatWithYourData.ProcurementService/ChatWithYourData.ProcurementService.API/ChatWithYourData.ProcurementService.API.csproj" -PassThru

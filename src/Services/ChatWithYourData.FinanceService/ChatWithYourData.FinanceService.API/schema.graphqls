@@ -139,7 +139,7 @@ type CreateAccountPayload {
 }
 
 type Customer {
-  id: ID!
+  id: UUID!
 }
 
 type Invoice @key(fields: "id") {

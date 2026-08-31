@@ -1,0 +1,41 @@
+name: Fusion Gateway Schema Composition & CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  validate-and-test:
+    name: Validate Subgraphs, Compose Gateway & Run Tests
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Local .NET Tools (Nitro CLI)
+        run: dotnet tool restore
+
+      - name: Build Solution
+        run: dotnet build --configuration Release
+
+      - name: Export Subgraph Schemas & Compose Gateway (gateway.far)
+        shell: pwsh
+        run: ./scripts/update-gateway.ps1
+
+      - name: Run Unit & Integration Tests
+        run: dotnet test --configuration Release --no-build
+
+      - name: Upload Gateway Artifact (gateway.far)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gateway-archive
+          path: src/Gateway/ChatWithYourData.Gateway/gateway.far
+          if-no-files-found: error

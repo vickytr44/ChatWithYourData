@@ -92,7 +92,7 @@ app.Run();
 
 ---
 
-## 5. Registering New MCP Servers & Tools
+### 5. Registering New MCP Servers & Tools
 
 When adding any new MCP server or exposing new tools to the agent ecosystem:
 
@@ -103,3 +103,25 @@ When adding any new MCP server or exposing new tools to the agent ecosystem:
    - Input schema parameters (required vs optional).
    - Return payload structure.
 3. **Update Agent Registration**: Ensure the MCP client in `ChatService` or other consuming agents registers the new server URI so all subsequent sessions can discover and call the new tools.
+
+---
+
+## 6. Schema Composition & Automation (Dual-Loop)
+
+### A. Local Inner Loop (`scripts/update-gateway.ps1`)
+To export fresh schemas from subgraphs and compose the `gateway.far` archive locally:
+```powershell
+./scripts/update-gateway.ps1
+```
+This runs:
+1. `dotnet tool restore` to ensure `ChilliCream.Nitro.CommandLine` is ready.
+2. Extracts live SDL from running services (or uses `./scripts/export-schemas.ps1`).
+3. Composes `./src/Gateway/ChatWithYourData.Gateway/gateway.far` using `dotnet nitro fusion compose`.
+
+### B. CI/CD Outer Loop (`.github/workflows/schema-composition.yml`)
+On every pull request and push to `main`, GitHub Actions:
+1. Builds the entire solution.
+2. Exports and composes `gateway.far`.
+3. Executes all 24 unit & integration tests.
+4. Uploads `gateway.far` as a verified build artifact.
+

@@ -15,11 +15,11 @@ type Query {
     before: String
     where: VendorFilterInput @cost(weight: "10")
     order: [VendorSortInput!] @cost(weight: "10")
-  ): VendorsConnection
+  ): VendorConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
@@ -36,15 +36,16 @@ type Query {
     before: String
     where: PurchaseOrderFilterInput @cost(weight: "10")
     order: [PurchaseOrderSortInput!] @cost(weight: "10")
-  ): PurchaseOrdersConnection
+  ): PurchaseOrderConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
     @cost(weight: "10")
+  purchaseOrderById(id: UUID!): PurchaseOrder @lookup @cost(weight: "10")
   goodsReceipts(
     "Returns the first _n_ elements from the list."
     first: Int
@@ -56,56 +57,76 @@ type Query {
     before: String
     where: GoodsReceiptFilterInput @cost(weight: "10")
     order: [GoodsReceiptSortInput!] @cost(weight: "10")
-  ): GoodsReceiptsConnection
+  ): GoodsReceiptConnection!
     @listSize(
-      assumedSize: 50
+      assumedSize: 150
       slicingArguments: ["first", "last"]
-      slicingArgumentDefaultValue: 10
+      slicingArgumentDefaultValue: 25
       sizedFields: ["edges", "nodes"]
       requireOneSlicingArgument: false
     )
     @cost(weight: "10")
+  goodsReceiptById(id: UUID!): GoodsReceipt @lookup @cost(weight: "10")
 }
 
 type Mutation {
-  createVendor(input: CreateVendorInput!): ProcurementMutationPayloadOfVendorDto!
+  createVendor(input: CreateVendorInput!): CreateVendorPayload!
     @cost(weight: "10")
-  createPurchaseOrder(input: CreatePurchaseOrderInput!): ProcurementMutationPayloadOfPurchaseOrderDto!
+  createPurchaseOrder(input: CreatePurchaseOrderInput!): CreatePurchaseOrderPayload!
     @cost(weight: "10")
 }
 
-type GoodsReceipt {
+type CreatePurchaseOrderPayload {
+  purchaseOrder: PurchaseOrder
+  errors: [CreatePurchaseOrderError!]
+}
+
+type CreateVendorPayload {
+  vendor: Vendor
+  errors: [CreateVendorError!]
+}
+
+type GoodsReceipt @key(fields: "id") {
+  purchaseOrder: PurchaseOrder @cost(weight: "10")
   purchaseOrderId: UUID!
   receiptNumber: String!
   receivedDateUtc: DateTime!
   receivedBy: String!
   notes: String!
-  purchaseOrder: PurchaseOrder
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
 "A connection to a list of items."
-type GoodsReceiptsConnection {
+type GoodsReceiptConnection @shareable {
+  "A list of edges."
+  edges: [GoodsReceiptEdge!]
+  "A flattened list of the nodes"
+  nodes: [GoodsReceipt!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [GoodsReceiptsEdge!]
-  "A flattened list of the nodes."
-  nodes: [GoodsReceipt!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type GoodsReceiptsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type GoodsReceiptEdge @shareable {
   "The item at the end of the edge."
   node: GoodsReceipt!
+  "A cursor for use in pagination."
+  cursor: String!
+}
+
+"A cursor that points to a specific page."
+type PageCursor @shareable {
+  "The page number."
+  page: Int!
+  "The cursor."
+  cursor: String!
 }
 
 "Information about pagination in a connection."
-type PageInfo {
+type PageInfo @shareable {
   "Indicates whether more edges exist following the set defined by the clients arguments."
   hasNextPage: Boolean!
   "Indicates whether more edges exist prior the set defined by the clients arguments."
@@ -114,120 +135,66 @@ type PageInfo {
   startCursor: String
   "When paginating forwards, the cursor to continue."
   endCursor: String
-}
-
-type ProcurementMutationPayloadOfPurchaseOrderDto {
-  success: Boolean!
-  data: PurchaseOrderDto
-  error: String
-}
-
-type ProcurementMutationPayloadOfVendorDto {
-  success: Boolean!
-  data: VendorDto
-  error: String
+  "A list of cursors to continue paginating forwards."
+  forwardCursors: [PageCursor!]!
+  "A list of cursors to continue paginating backwards."
+  backwardCursors: [PageCursor!]!
 }
 
 type Product {
   id: UUID!
 }
 
-"Represents a purchase order issued to a vendor."
-type PurchaseOrder {
-  vendorId: UUID!
-  "The vendor for this purchase order (resolved via DataLoader)."
+type PurchaseOrder @key(fields: "id") {
   vendor: Vendor @cost(weight: "10")
-  "The line items for this purchase order (resolved via DataLoader)."
   lines: [PurchaseOrderLine!]! @cost(weight: "10")
   poNumber: String!
-  orderDateUtc: DateTime!
-  expectedDeliveryDateUtc: DateTime
-  status: PurchaseOrderStatus!
-  totalCost: Decimal!
-  notes: String!
-  goodsReceipts: [GoodsReceipt!]!
-  id: UUID!
-  createdAtUtc: DateTime!
-  updatedAtUtc: DateTime
-}
-
-type PurchaseOrderDto {
-  id: UUID!
-  poNumber: String!
   vendorId: UUID!
   orderDateUtc: DateTime!
   expectedDeliveryDateUtc: DateTime
   status: PurchaseOrderStatus!
   totalCost: Decimal!
   notes: String!
-  lines: [PurchaseOrderLineDto!]!
-}
-
-"Represents a line item in a purchase order."
-type PurchaseOrderLine {
-  "The product associated with this purchase order line (stitched from InventoryService)."
-  product: Product @cost(weight: "10")
-  purchaseOrderId: UUID!
-  productId: UUID!
-  sku: String!
-  productName: String!
-  quantityOrdered: Int!
-  quantityReceived: Int!
-  unitCost: Decimal!
-  lineTotal: Decimal!
-  purchaseOrder: PurchaseOrder
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
-type PurchaseOrderLineDto {
-  id: UUID!
-  purchaseOrderId: UUID!
-  productId: UUID!
-  sku: String!
-  productName: String!
-  quantityOrdered: Int!
-  quantityReceived: Int!
-  unitCost: Decimal!
-  lineTotal: Decimal!
-}
-
 "A connection to a list of items."
-type PurchaseOrdersConnection {
+type PurchaseOrderConnection @shareable {
+  "A list of edges."
+  edges: [PurchaseOrderEdge!]
+  "A flattened list of the nodes"
+  nodes: [PurchaseOrder!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [PurchaseOrdersEdge!]
-  "A flattened list of the nodes."
-  nodes: [PurchaseOrder!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type PurchaseOrdersEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type PurchaseOrderEdge @shareable {
   "The item at the end of the edge."
   node: PurchaseOrder!
+  "A cursor for use in pagination."
+  cursor: String!
 }
 
-type Vendor {
-  vendorCode: String!
-  name: String!
-  contactEmail: String!
-  phone: String!
-  address: String!
-  paymentTermsDays: Int!
-  taxId: String!
-  isActive: Boolean!
-  purchaseOrders: [PurchaseOrder!]!
+type PurchaseOrderLine {
+  product: Product!
+  purchaseOrderId: UUID!
+  productId: UUID!
+  sku: String!
+  productName: String!
+  quantityOrdered: Int!
+  quantityReceived: Int!
+  unitCost: Decimal!
+  lineTotal: Decimal!
   id: UUID!
   createdAtUtc: DateTime!
   updatedAtUtc: DateTime
 }
 
-type VendorDto {
-  id: UUID!
+type Vendor @key(fields: "id") {
   vendorCode: String!
   name: String!
   contactEmail: String!
@@ -236,26 +203,47 @@ type VendorDto {
   paymentTermsDays: Int!
   taxId: String!
   isActive: Boolean!
+  id: UUID!
   createdAtUtc: DateTime!
+  updatedAtUtc: DateTime
+}
+
+type VendorCodeAlreadyExistsError implements Error {
+  message: String!
+  vendorCode: String!
 }
 
 "A connection to a list of items."
-type VendorsConnection {
+type VendorConnection @shareable {
+  "A list of edges."
+  edges: [VendorEdge!]
+  "A flattened list of the nodes"
+  nodes: [Vendor!]
   "Information to aid in pagination."
   pageInfo: PageInfo!
-  "A list of edges."
-  edges: [VendorsEdge!]
-  "A flattened list of the nodes."
-  nodes: [Vendor!]
+  "Identifies the total count of items in the connection."
+  totalCount: Int! @cost(weight: "10")
 }
 
-"An edge in a connection."
-type VendorsEdge {
-  "A cursor for use in pagination."
-  cursor: String!
+type VendorEdge @shareable {
   "The item at the end of the edge."
   node: Vendor!
+  "A cursor for use in pagination."
+  cursor: String!
 }
+
+type VendorNotFoundError implements Error {
+  message: String!
+  vendorId: UUID!
+}
+
+interface Error {
+  message: String!
+}
+
+union CreatePurchaseOrderError = VendorNotFoundError
+
+union CreateVendorError = VendorCodeAlreadyExistsError
 
 input BooleanOperationFilterInput {
   eq: Boolean @cost(weight: "10")
@@ -301,81 +289,17 @@ input DateTimeOperationFilterInput {
   nlte: DateTime @cost(weight: "10")
 }
 
-input DecimalOperationFilterInput {
-  eq: Decimal @cost(weight: "10")
-  neq: Decimal @cost(weight: "10")
-  in: [Decimal] @cost(weight: "10")
-  nin: [Decimal] @cost(weight: "10")
-  gt: Decimal @cost(weight: "10")
-  ngt: Decimal @cost(weight: "10")
-  gte: Decimal @cost(weight: "10")
-  ngte: Decimal @cost(weight: "10")
-  lt: Decimal @cost(weight: "10")
-  nlt: Decimal @cost(weight: "10")
-  lte: Decimal @cost(weight: "10")
-  nlte: Decimal @cost(weight: "10")
-}
-
 input GoodsReceiptFilterInput {
   and: [GoodsReceiptFilterInput!]
   or: [GoodsReceiptFilterInput!]
   purchaseOrderId: UuidOperationFilterInput
   receiptNumber: StringOperationFilterInput
   receivedDateUtc: DateTimeOperationFilterInput
-  receivedBy: StringOperationFilterInput
-  notes: StringOperationFilterInput
-  purchaseOrder: PurchaseOrderFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input GoodsReceiptSortInput {
-  purchaseOrderId: SortEnumType @cost(weight: "10")
   receiptNumber: SortEnumType @cost(weight: "10")
   receivedDateUtc: SortEnumType @cost(weight: "10")
-  receivedBy: SortEnumType @cost(weight: "10")
-  notes: SortEnumType @cost(weight: "10")
-  purchaseOrder: PurchaseOrderSortInput @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
-}
-
-input IntOperationFilterInput {
-  eq: Int @cost(weight: "10")
-  neq: Int @cost(weight: "10")
-  in: [Int] @cost(weight: "10")
-  nin: [Int] @cost(weight: "10")
-  gt: Int @cost(weight: "10")
-  ngt: Int @cost(weight: "10")
-  gte: Int @cost(weight: "10")
-  ngte: Int @cost(weight: "10")
-  lt: Int @cost(weight: "10")
-  nlt: Int @cost(weight: "10")
-  lte: Int @cost(weight: "10")
-  nlte: Int @cost(weight: "10")
-}
-
-input ListFilterInputTypeOfGoodsReceiptFilterInput {
-  all: GoodsReceiptFilterInput @cost(weight: "10")
-  none: GoodsReceiptFilterInput @cost(weight: "10")
-  some: GoodsReceiptFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListFilterInputTypeOfPurchaseOrderFilterInput {
-  all: PurchaseOrderFilterInput @cost(weight: "10")
-  none: PurchaseOrderFilterInput @cost(weight: "10")
-  some: PurchaseOrderFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
-}
-
-input ListFilterInputTypeOfPurchaseOrderLineFilterInput {
-  all: PurchaseOrderLineFilterInput @cost(weight: "10")
-  none: PurchaseOrderLineFilterInput @cost(weight: "10")
-  some: PurchaseOrderLineFilterInput @cost(weight: "10")
-  any: Boolean @cost(weight: "10")
 }
 
 input PurchaseOrderFilterInput {
@@ -383,48 +307,14 @@ input PurchaseOrderFilterInput {
   or: [PurchaseOrderFilterInput!]
   poNumber: StringOperationFilterInput
   vendorId: UuidOperationFilterInput
-  orderDateUtc: DateTimeOperationFilterInput
-  expectedDeliveryDateUtc: DateTimeOperationFilterInput
   status: PurchaseOrderStatusOperationFilterInput
-  totalCost: DecimalOperationFilterInput
-  notes: StringOperationFilterInput
-  vendor: VendorFilterInput
-  lines: ListFilterInputTypeOfPurchaseOrderLineFilterInput
-  goodsReceipts: ListFilterInputTypeOfGoodsReceiptFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
-}
-
-input PurchaseOrderLineFilterInput {
-  and: [PurchaseOrderLineFilterInput!]
-  or: [PurchaseOrderLineFilterInput!]
-  purchaseOrderId: UuidOperationFilterInput
-  productId: UuidOperationFilterInput
-  sku: StringOperationFilterInput
-  productName: StringOperationFilterInput
-  quantityOrdered: IntOperationFilterInput
-  quantityReceived: IntOperationFilterInput
-  unitCost: DecimalOperationFilterInput
-  lineTotal: DecimalOperationFilterInput
-  purchaseOrder: PurchaseOrderFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
+  orderDateUtc: DateTimeOperationFilterInput
 }
 
 input PurchaseOrderSortInput {
   poNumber: SortEnumType @cost(weight: "10")
-  vendorId: SortEnumType @cost(weight: "10")
   orderDateUtc: SortEnumType @cost(weight: "10")
-  expectedDeliveryDateUtc: SortEnumType @cost(weight: "10")
-  status: SortEnumType @cost(weight: "10")
   totalCost: SortEnumType @cost(weight: "10")
-  notes: SortEnumType @cost(weight: "10")
-  vendor: VendorSortInput @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
-  createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
 }
 
 input PurchaseOrderStatusOperationFilterInput {
@@ -467,32 +357,16 @@ input UuidOperationFilterInput {
 input VendorFilterInput {
   and: [VendorFilterInput!]
   or: [VendorFilterInput!]
-  vendorCode: StringOperationFilterInput
   name: StringOperationFilterInput
+  vendorCode: StringOperationFilterInput
   contactEmail: StringOperationFilterInput
-  phone: StringOperationFilterInput
-  address: StringOperationFilterInput
-  paymentTermsDays: IntOperationFilterInput
-  taxId: StringOperationFilterInput
   isActive: BooleanOperationFilterInput
-  purchaseOrders: ListFilterInputTypeOfPurchaseOrderFilterInput
-  id: UuidOperationFilterInput
-  createdAtUtc: DateTimeOperationFilterInput
-  updatedAtUtc: DateTimeOperationFilterInput
 }
 
 input VendorSortInput {
-  vendorCode: SortEnumType @cost(weight: "10")
   name: SortEnumType @cost(weight: "10")
-  contactEmail: SortEnumType @cost(weight: "10")
-  phone: SortEnumType @cost(weight: "10")
-  address: SortEnumType @cost(weight: "10")
-  paymentTermsDays: SortEnumType @cost(weight: "10")
-  taxId: SortEnumType @cost(weight: "10")
-  isActive: SortEnumType @cost(weight: "10")
-  id: SortEnumType @cost(weight: "10")
+  vendorCode: SortEnumType @cost(weight: "10")
   createdAtUtc: SortEnumType @cost(weight: "10")
-  updatedAtUtc: SortEnumType @cost(weight: "10")
 }
 
 enum PurchaseOrderStatus {
@@ -506,6 +380,15 @@ enum PurchaseOrderStatus {
   CANCELLED
 }
 
+enum ScalarSerializationType {
+  STRING
+  BOOLEAN
+  INT
+  FLOAT
+  OBJECT
+  LIST
+}
+
 enum SortEnumType {
   ASC
   DESC
@@ -513,14 +396,25 @@ enum SortEnumType {
 
 "The `DateTime` scalar type represents a date and time with time zone offset information."
 scalar DateTime
+  @serializeAs(
+    type: STRING
+    pattern: "^\\d{4}-\\d{2}-\\d{2}[Tt]\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,9})?(?:[Zz]|[+-]\\d{2}:\\d{2})$"
+  )
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/date-time.html")
 
 "The `Decimal` scalar type represents a decimal floating-point number with high precision."
 scalar Decimal
+  @serializeAs(type: FLOAT)
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/decimal.html")
+
+scalar FieldSelectionSet
 
 "The `UUID` scalar type represents a Universally Unique Identifier (UUID) as defined by RFC 9562."
 scalar UUID
+  @serializeAs(
+    type: STRING
+    pattern: "^[\\da-fA-F]{8}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{4}-[\\da-fA-F]{12}$"
+  )
   @specifiedBy(url: "https://scalars.graphql.org/chillicream/uuid.html")
 
 "The purpose of the `cost` directive is to define a `weight` for GraphQL types, fields, and arguments. Static analysis can use these weights when calculating the overall cost of a query or response."
@@ -534,6 +428,15 @@ directive @cost(
   | ARGUMENT_DEFINITION
   | ENUM
   | INPUT_FIELD_DEFINITION
+
+"""
+The @key directive is used to designate an entity's unique key,
+which identifies how to uniquely reference an instance of
+an entity across different source schemas.
+"""
+directive @key("The field selection set syntax." fields: FieldSelectionSet!) repeatable on
+  | OBJECT
+  | INTERFACE
 
 "The purpose of the `@listSize` directive is to either inform the static analysis about the size of returned lists (if that information is statically available), or to point the analysis to where to find that information."
 directive @listSize(
@@ -555,3 +458,12 @@ that can be used by the distributed GraphQL executor to resolve an entity by
 a stable key.
 """
 directive @lookup on FIELD_DEFINITION
+
+directive @serializeAs(
+  "The primitive type a scalar is serialized to."
+  type: [ScalarSerializationType!]!
+  "The ECMA-262 regex pattern that the serialized scalar value conforms to."
+  pattern: String
+) on SCALAR
+
+directive @shareable repeatable on OBJECT | FIELD_DEFINITION
