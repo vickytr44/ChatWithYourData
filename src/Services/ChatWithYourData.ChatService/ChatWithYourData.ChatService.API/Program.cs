@@ -41,28 +41,27 @@ builder.Services.AddSingleton<IMcpToolProvider, McpToolProvider>();
 builder.Services.AddSingleton<IChatClient>(sp =>
 {
     var options = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AgentOptions>>().Value;
-    if (!string.IsNullOrWhiteSpace(options.ApiKey))
+    if (string.IsNullOrWhiteSpace(options.ApiKey))
     {
-        var clientOptions = new OpenAIClientOptions();
-        if (!string.IsNullOrWhiteSpace(options.Endpoint))
-        {
-            clientOptions.Endpoint = new Uri(options.Endpoint);
-        }
-
-        // Attach policy to preserve Google Gemini thought_signature during multi-turn function calls
-        clientOptions.AddPolicy(new GeminiThoughtSignaturePolicy(), System.ClientModel.Primitives.PipelinePosition.PerCall);
-
-        var openAiClient = new OpenAIClient(new System.ClientModel.ApiKeyCredential(options.ApiKey), clientOptions);
-        return openAiClient
-            .GetChatClient(options.Model)
-            .AsIChatClient()
-            .AsBuilder()
-            .UseFunctionInvocation()
-            .Build();
+        throw new InvalidOperationException("API key is not configured for Agent. Please configure 'Agent:ApiKey' or set the environment variable.");
     }
 
-    // Offline / Mock IChatClient for development & testing
-    return new MockErpChatClient();
+    var clientOptions = new OpenAIClientOptions();
+    if (!string.IsNullOrWhiteSpace(options.Endpoint))
+    {
+        clientOptions.Endpoint = new Uri(options.Endpoint);
+    }
+
+    // Attach policy to preserve Google Gemini thought_signature during multi-turn function calls
+    clientOptions.AddPolicy(new GeminiThoughtSignaturePolicy(), System.ClientModel.Primitives.PipelinePosition.PerCall);
+
+    var openAiClient = new OpenAIClient(new System.ClientModel.ApiKeyCredential(options.ApiKey), clientOptions);
+    return openAiClient
+        .GetChatClient(options.Model)
+        .AsIChatClient()
+        .AsBuilder()
+        .UseFunctionInvocation()
+        .Build();
 });
 
 // Register AIAgent
@@ -70,7 +69,16 @@ builder.Services.AddSingleton<AIAgent>(sp =>
 {
     var chatClient = sp.GetRequiredService<IChatClient>();
     var toolProvider = sp.GetRequiredService<IMcpToolProvider>();
-    var tools = toolProvider.GetToolsAsync().GetAwaiter().GetResult();
+    
+    IList<AITool> tools;
+    try
+    {
+        tools = toolProvider.GetToolsAsync().GetAwaiter().GetResult();
+    }
+    catch
+    {
+        tools = [];
+    }
 
     var agent = new ChatClientAgent(
         chatClient: chatClient,
@@ -139,99 +147,6 @@ app.MapGet("/health", async (IMcpToolProvider toolProvider) =>
 });
 
 app.Run();
-
-/// <summary>
-/// Offline / Mock implementation of IChatClient for testing and local exploration without API keys.
-/// </summary>
-public sealed class MockErpChatClient : IChatClient
-{
-    public ChatClientMetadata Metadata => new("MockErpChatClient", new Uri("http://localhost:5005"));
-
-    public Task<ChatResponse> GetResponseAsync(
-        IEnumerable<ChatMessage> chatMessages,
-        ChatOptions? options = null,
-        CancellationToken cancellationToken = default)
-    {
-        var lastMessage = chatMessages.LastOrDefault(m => m.Role == ChatRole.User)?.Text ?? string.Empty;
-        var replyText = GenerateResponse(lastMessage);
-
-        var response = new ChatResponse(new ChatMessage(ChatRole.Assistant, replyText))
-        {
-            ModelId = "mock-erp-gpt4o",
-            FinishReason = ChatFinishReason.Stop
-        };
-
-        return Task.FromResult(response);
-    }
-
-    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-        IEnumerable<ChatMessage> chatMessages,
-        ChatOptions? options = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var lastMessage = chatMessages.LastOrDefault(m => m.Role == ChatRole.User)?.Text ?? string.Empty;
-        var replyText = GenerateResponse(lastMessage);
-
-        var words = replyText.Split(' ');
-        var responseId = "msg-" + Guid.NewGuid().ToString("N");
-        for (var i = 0; i < words.Length; i++)
-        {
-            cancellationToken.ThrowIfCancellationRequested();
-            var chunk = (i == 0 ? "" : " ") + words[i];
-            yield return new ChatResponseUpdate(ChatRole.Assistant, chunk)
-            {
-                ResponseId = responseId,
-                ModelId = "mock-erp-gpt4o"
-            };
-            await Task.Delay(20, cancellationToken);
-        }
-    }
-
-    public object? GetService(Type serviceType, object? serviceKey = null) =>
-        serviceType == typeof(IChatClient) ? this : null;
-
-    public void Dispose() { }
-
-    private static string GenerateResponse(string prompt)
-    {
-        var p = prompt.ToLowerInvariant();
-        if (p.Contains("product") || p.Contains("inventory") || p.Contains("stock"))
-        {
-            return "I queried the **Inventory Service** via MCP tool `get_products`.\n\n" +
-                   "| SKU | Product Name | Stock on Hand | Unit Price |\n" +
-                   "| :--- | :--- | :--- | :--- |\n" +
-                   "| `PROD-001` | Widget Alpha | 150 units | $19.99 |\n" +
-                   "| `PROD-002` | Gadget Pro | 42 units | $149.50 |\n\n" +
-                   "Stock levels are optimal across warehouses.";
-        }
-
-        if (p.Contains("sales") || p.Contains("order") || p.Contains("customer"))
-        {
-            return "I queried the **Sales Service** via MCP tool `get_sales_orders`.\n\n" +
-                   "- **Sales Order #SO-1001**: Confirmed ($450.00) for Customer `CUST-101` (Acme Corp)\n" +
-                   "- **Sales Order #SO-1002**: Shipped ($1,280.00) for Customer `CUST-102` (Global Tech)\n\n" +
-                   "Fulfillment pipeline is moving on schedule.";
-        }
-
-        if (p.Contains("purchase") || p.Contains("vendor") || p.Contains("procurement"))
-        {
-            return "I queried the **Procurement Service** via MCP tool `get_purchase_orders`.\n\n" +
-                   "- **Purchase Order #PO-9001**: Approved ($1,200.00) with Vendor `VEND-ACME`\n" +
-                   "- **Purchase Order #PO-9002**: Received ($3,400.00) with Vendor `VEND-OMEGA`\n\n" +
-                   "Replenishment orders are within approved budgets.";
-        }
-
-        if (p.Contains("finance") || p.Contains("invoice") || p.Contains("balance") || p.Contains("ledger"))
-        {
-            return "I queried the **Finance Service** via MCP tool `get_invoices`.\n\n" +
-                   "- **Total Outstanding Invoices**: $1,730.00\n" +
-                   "- **Recent Invoice #INV-2024-001**: Amount $450.00 (Status: Unpaid, Due in 30 days)\n" +
-                   "- **General Ledger**: Balanced debit/credit entries.";
-        }
-
-        return $"Hello! I am your **ChatWithYourData ERP AI Assistant**. I can help you search and manage products, sales orders, purchase orders, and financial records across the federated ERP system. You said: \"{prompt}\"";
-    }
-}
 
 namespace ChatWithYourData.ChatService.API
 {

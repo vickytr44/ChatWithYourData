@@ -2,16 +2,52 @@ using System.Net;
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 
 namespace ChatWithYourData.ChatService.IntegrationTests;
 
 public class ChatServiceIntegrationTests : IClassFixture<WebApplicationFactory<API.Program>>
 {
+    private readonly WebApplicationFactory<API.Program> _baseFactory;
     private readonly WebApplicationFactory<API.Program> _factory;
 
     public ChatServiceIntegrationTests(WebApplicationFactory<API.Program> factory)
     {
-        _factory = factory;
+        _baseFactory = factory;
+        _factory = factory.WithWebHostBuilder(builder =>
+        {
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Agent:ApiKey"] = "test-api-key"
+                });
+            });
+        });
+    }
+
+    [Fact]
+    public void Startup_WhenApiKeyMissing_ThrowsInvalidOperationException()
+    {
+        // Act
+        var act = () =>
+        {
+            var clientFactory = _baseFactory.WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureAppConfiguration((_, config) =>
+                {
+                    config.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["Agent:ApiKey"] = ""
+                    });
+                });
+            });
+            _ = clientFactory.CreateClient();
+        };
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+           .WithMessage("*API key is not configured*");
     }
 
     [Fact]

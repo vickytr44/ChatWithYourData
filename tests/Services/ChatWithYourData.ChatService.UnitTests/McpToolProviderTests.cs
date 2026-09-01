@@ -9,7 +9,7 @@ namespace ChatWithYourData.ChatService.UnitTests;
 public class McpToolProviderTests
 {
     [Fact]
-    public async Task GetToolsAsync_WhenGatewayUnreachable_ReturnsFallbackErpTools()
+    public async Task GetToolsAsync_WhenGatewayUnreachable_ReturnsEmptyList()
     {
         // Arrange
         var options = Options.Create(new AgentOptions
@@ -24,8 +24,7 @@ public class McpToolProviderTests
 
         // Assert
         tools.Should().NotBeNull();
-        tools.Should().HaveCountGreaterThanOrEqualTo(4);
-        tools.Select(t => t.Name).Should().Contain(new[] { "get_products", "get_sales_orders", "get_purchase_orders", "get_invoices" });
+        tools.Should().BeEmpty();
     }
 
     [Fact]
@@ -38,7 +37,7 @@ public class McpToolProviderTests
         options.Name.Should().Be("ChatWithYourDataERP");
         options.DisplayName.Should().Be("ERP Intelligent Assistant");
         options.Provider.Should().Be("GoogleGemini");
-        options.Model.Should().Be("gemini-2.5-flash");
+        options.Model.Should().Be("gemini-3.1-flash-lite");
         options.Endpoint.Should().Be("https://generativelanguage.googleapis.com/v1beta/openai/");
         options.McpGatewayEndpoint.Should().Be("http://localhost:5000/graphql/mcp");
         options.AgUiEndpoint.Should().Be("/ag-ui");

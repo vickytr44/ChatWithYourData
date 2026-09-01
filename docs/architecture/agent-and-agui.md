@@ -27,7 +27,7 @@ sequenceDiagram
 
 ## 1. Microsoft Agent Framework (`Microsoft.Agents.AI` 1.19.0)
 - **Agent Architecture**: Uses `ChatClientAgent` configured with enterprise ERP instructions and dynamic tools from the MCP Gateway.
-- **Model Support**: Implements `IChatClient` (Microsoft.Extensions.AI) supporting OpenAI, Azure OpenAI, Ollama, and offline/mock clients for testing.
+- **Model Support**: Implements `IChatClient` (Microsoft.Extensions.AI) supporting OpenAI, Azure OpenAI, Ollama, and Google Gemini with API key validation.
 - **MCP Client Integration**: `McpToolProvider` connects to the Fusion Gateway's `/graphql/mcp` endpoint using `ModelContextProtocol` C# SDK (`HttpClientTransport` in SSE mode).
 - **Prompt & Context Management**: Enterprise system prompt guides the LLM to route queries across the 4 ERP subgraphs: Inventory, Sales, Procurement, and Finance.
 
@@ -57,11 +57,11 @@ builder.Services.AddSingleton<IMcpToolProvider, McpToolProvider>();
 builder.Services.AddSingleton<IChatClient>(sp =>
 {
     var options = sp.GetRequiredService<IOptions<AgentOptions>>().Value;
-    if (!string.IsNullOrWhiteSpace(options.ApiKey))
+    if (string.IsNullOrWhiteSpace(options.ApiKey))
     {
-        return new OpenAIClient(options.ApiKey).GetChatClient(options.Model).AsIChatClient();
+        throw new InvalidOperationException("API key is not configured for Agent. Please configure 'Agent:ApiKey' or set the environment variable.");
     }
-    return new MockErpChatClient();
+    return new OpenAIClient(options.ApiKey).GetChatClient(options.Model).AsIChatClient();
 });
 
 builder.Services.AddSingleton<AIAgent>(sp =>
