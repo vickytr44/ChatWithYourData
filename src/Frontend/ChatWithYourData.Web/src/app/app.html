@@ -39,27 +39,11 @@
       </div>
     </main>
 
-    <!-- Right-Side Docked Copilot Assistant Side Panel -->
-    <aside class="enterprise-copilot-pane" [class.collapsed]="!sidebarOpen()">
-      <div class="copilot-pane-header">
-        <div class="copilot-header-title">
-          <span class="pulse-dot"></span>
-          <div class="copilot-title-text">
-            <span class="copilot-title">ERP Copilot Assistant</span>
-            <span class="copilot-sub">Federated Multi-Service AI</span>
-          </div>
-        </div>
-        <button type="button" class="btn-close-copilot" title="Close Copilot Panel" (click)="toggleSidebar()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
-      </div>
-
-      <div class="copilot-pane-body">
-        <copilot-chat [agentId]="'ChatWithYourDataERP'" />
-      </div>
-    </aside>
+    <!-- Right-Side Copilot Assistant Sidebar -->
+    <copilot-sidebar 
+      [(open)]="sidebarOpen" 
+      title="ERP Copilot Assistant" 
+      position="right" 
+      [width]="480" />
   </div>
 </div>

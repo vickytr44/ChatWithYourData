@@ -280,7 +280,8 @@ html, body {
 }
 
 /* CopilotKit UI Overrides for Light Enterprise Theme */
-copilot-sidebar, copilot-chat {
+copilot-sidebar {
+  display: contents !important;
   --copilot-kit-primary-color: #1e40af !important;
   --copilot-kit-background-color: #ffffff !important;
   --copilot-kit-muted-color: #f1f5f9 !important;
@@ -288,18 +289,44 @@ copilot-sidebar, copilot-chat {
   --copilot-kit-text-color: #0f172a !important;
   --copilot-kit-secondary-text-color: #475569 !important;
   font-family: var(--font-family-base) !important;
+}
+
+copilot-chat {
   display: flex !important;
   flex-direction: column !important;
   height: 100% !important;
   width: 100% !important;
-  flex: 1 1 0% !important;
+  flex: 1 1 auto !important;
   min-height: 0 !important;
+  --copilot-kit-primary-color: #1e40af !important;
+  --copilot-kit-background-color: #ffffff !important;
+  --copilot-kit-muted-color: #f1f5f9 !important;
+  --copilot-kit-border-color: #e2e8f0 !important;
+  --copilot-kit-text-color: #0f172a !important;
+  --copilot-kit-secondary-text-color: #475569 !important;
+  font-family: var(--font-family-base) !important;
+}
+
+/* CopilotKit Sidebar Styling */
+.copilot-sidebar-window {
+  border-left: 1px solid var(--color-border) !important;
+  box-shadow: -4px 0 24px rgba(15, 23, 42, 0.12) !important;
+  font-family: var(--font-family-base) !important;
+}
+
+.copilot-sidebar-header {
+  border-bottom: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface-mid) !important;
+}
+
+.copilot-sidebar-toggle {
+  background: var(--color-primary) !important;
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.35) !important;
 }
 
 /* CopilotKit Chat Textarea Height Constraint */
 copilot-chat textarea,
 copilot-sidebar textarea,
-.enterprise-copilot-pane textarea,
 [data-copilotkit] textarea {
   min-height: 44px !important;
   max-height: 120px !important;
@@ -307,5 +334,6 @@ copilot-sidebar textarea,
   font-size: 13px !important;
   line-height: 1.4 !important;
 }
+
 
 

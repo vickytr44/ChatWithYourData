@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { CopilotChat } from '@copilotkit/angular';
+import { CopilotSidebar } from '@copilotkit/angular';
 import { NavbarComponent } from './components/navbar/navbar';
 import { QueryHeaderComponent } from './components/query-header/query-header';
 import { DataGridComponent } from './components/data-grid/data-grid';
@@ -21,7 +21,7 @@ import { LineItem } from './models/data.models';
     EmptyStateComponent,
     LoadingStateComponent,
     ErrorStateComponent,
-    CopilotChat
+    CopilotSidebar
   ],
   templateUrl: './app.html',
   styleUrl: './app.css'
