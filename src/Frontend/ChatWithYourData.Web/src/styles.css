@@ -314,6 +314,10 @@ copilot-chat {
   font-family: var(--font-family-base) !important;
 }
 
+.copilot-sidebar-backdrop {
+  display: none !important;
+}
+
 .copilot-sidebar-header {
   border-bottom: 1px solid var(--color-border) !important;
   background-color: var(--color-surface-mid) !important;

@@ -4,7 +4,7 @@
 
   <!-- Main Split Body -->
   <div class="enterprise-body">
-    <main class="main-canvas">
+    <main class="main-canvas" [class.with-sidebar-open]="sidebarOpen()">
       <div class="content-wrapper">
         <!-- Natural Language Query & Filter Header -->
         <app-query-header />

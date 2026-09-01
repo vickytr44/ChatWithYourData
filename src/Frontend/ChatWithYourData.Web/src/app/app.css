@@ -29,6 +29,11 @@
   overflow-y: auto;
   padding: var(--space-xl);
   background-color: var(--color-canvas);
+  transition: margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-canvas.with-sidebar-open {
+  margin-right: 480px;
 }
 
 .content-wrapper {
