@@ -48,11 +48,22 @@
     </div>
 
     <!-- Execute Query Action -->
-    <button type="submit" class="btn btn-primary query-btn">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
-        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-      </svg>
-      <span>Query Data</span>
+    <button 
+      type="submit" 
+      class="btn btn-primary query-btn" 
+      [disabled]="!queryInput().trim() || dataService.viewState() === 'loading'"
+    >
+      @if (dataService.viewState() === 'loading') {
+        <svg class="spinner-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-linecap="round" />
+        </svg>
+        <span>Querying Agent...</span>
+      } @else {
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        <span>Query Data</span>
+      }
     </button>
   </form>
 
@@ -67,4 +78,16 @@
       }
     </div>
   </div>
+
+  <!-- AI Agent Insights / Summary Banner -->
+  @if (dataService.querySummary(); as summary) {
+    <div class="agent-insights-banner">
+      <div class="insights-content">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="insights-icon">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+        <span><strong>Agent Result:</strong> {{ summary }}</span>
+      </div>
+    </div>
+  }
 </div>

@@ -29,13 +29,13 @@ import { LineItem } from './models/data.models';
 export class App {
   readonly dataService = inject(DataService);
   readonly sidebarOpen = signal(false);
-  readonly selectedItemContext = signal<LineItem | null>(null);
+  readonly selectedItemContext = signal<any | null>(null);
 
   toggleSidebar() {
     this.sidebarOpen.update(v => !v);
   }
 
-  onAskItemCopilot(item: LineItem) {
+  onAskItemCopilot(item: any) {
     this.selectedItemContext.set(item);
     this.sidebarOpen.set(true);
   }

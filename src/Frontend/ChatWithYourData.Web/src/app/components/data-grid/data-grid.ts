@@ -1,7 +1,7 @@
 import { Component, inject, output, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DataService } from '../../services/data.service';
-import { LineItem } from '../../models/data.models';
+import { TableColumn } from '../../models/data.models';
 
 @Component({
   selector: 'app-data-grid',
@@ -12,42 +12,70 @@ import { LineItem } from '../../models/data.models';
 })
 export class DataGridComponent {
   readonly dataService = inject(DataService);
-  readonly askCopilot = output<LineItem>();
+  readonly askCopilot = output<any>();
 
-  selectedItems = signal<Set<string>>(new Set());
+  selectedRowIds = signal<Set<string>>(new Set());
+
+  get activeColumns(): TableColumn[] {
+    return this.dataService.activeTable()?.columns || [];
+  }
+
+  getRowId(row: Record<string, any>, index: number): string {
+    return String(row['id'] || row['sku'] || row['poNumber'] || row['orderNumber'] || row['invoiceId'] || index);
+  }
 
   toggleSelectAll(event: Event) {
     const checked = (event.target as HTMLInputElement).checked;
     if (checked) {
-      const allIds = new Set(this.dataService.paginatedItems().map(i => i.id));
-      this.selectedItems.set(allIds);
+      const allIds = new Set(this.dataService.paginatedRows().map((r, i) => this.getRowId(r, i)));
+      this.selectedRowIds.set(allIds);
     } else {
-      this.selectedItems.set(new Set());
+      this.selectedRowIds.set(new Set());
     }
   }
 
-  toggleSelectItem(id: string) {
-    const set = new Set(this.selectedItems());
+  toggleSelectRow(id: string) {
+    const set = new Set(this.selectedRowIds());
     if (set.has(id)) {
       set.delete(id);
     } else {
       set.add(id);
     }
-    this.selectedItems.set(set);
+    this.selectedRowIds.set(set);
   }
 
-  isItemSelected(id: string): boolean {
-    return this.selectedItems().has(id);
+  isRowSelected(id: string): boolean {
+    return this.selectedRowIds().has(id);
   }
 
   get allCurrentPageSelected(): boolean {
-    const current = this.dataService.paginatedItems();
+    const current = this.dataService.paginatedRows();
     if (current.length === 0) return false;
-    return current.every(i => this.selectedItems().has(i.id));
+    return current.every((r, i) => this.selectedRowIds().has(this.getRowId(r, i)));
   }
 
-  onAskItemCopilot(item: LineItem) {
-    this.askCopilot.emit(item);
+  formatCurrency(value: any): string {
+    const num = Number(value);
+    if (isNaN(num)) return String(value ?? '—');
+    return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  getBadgeClass(val: any): string {
+    const str = String(val || '').toLowerCase();
+    if (str.includes('stock') || str.includes('fulfill') || str.includes('settled') || str.includes('active') || str.includes('success')) {
+      return 'badge-success';
+    }
+    if (str.includes('crit') || str.includes('error') || str.includes('failed') || str.includes('overdue')) {
+      return 'badge-error';
+    }
+    if (str.includes('pend') || str.includes('warn') || str.includes('approv') || str.includes('review')) {
+      return 'badge-warning';
+    }
+    return 'badge-info';
+  }
+
+  onAskRowCopilot(row: Record<string, any>) {
+    this.askCopilot.emit(row);
   }
 
   onPageSizeChange(event: Event) {

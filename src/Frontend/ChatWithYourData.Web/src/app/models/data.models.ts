@@ -34,3 +34,25 @@ export interface FilterState {
 }
 
 export type ViewState = 'ready' | 'loading' | 'empty' | 'error';
+
+export interface TableColumn {
+  key: string;
+  label: string;
+  type: 'string' | 'number' | 'currency' | 'badge' | 'date';
+}
+
+export interface TableData {
+  tableName: string;
+  description?: string | null;
+  parentKeyName?: string | null;
+  columns: TableColumn[];
+  rows: Record<string, any>[];
+}
+
+export interface DynamicDataQueryResponse {
+  success: boolean;
+  summary: string;
+  tables: TableData[];
+  rawJson?: string | null;
+  errorMessage?: string | null;
+}

@@ -18,7 +18,7 @@
                 <line x1="12" y1="16" x2="12" y2="12"></line>
                 <line x1="12" y1="8" x2="12.01" y2="8"></line>
               </svg>
-              <span>Active Context for AI: <strong>{{ ctx.name }}</strong> (<code>{{ ctx.sku }}</code>) in <strong>{{ ctx.subgraph }}</strong></span>
+              <span>Active Context for AI: <strong>{{ ctx.name || ctx.poNumber || ctx.invoiceId || ctx.sku || 'Record' }}</strong> (<code>{{ ctx.sku || ctx.poNumber || ctx.id || ctx.invoiceId || 'ID' }}</code>)</span>
             </div>
             <button type="button" class="btn-clear-context" (click)="clearContext()">
               Clear Context

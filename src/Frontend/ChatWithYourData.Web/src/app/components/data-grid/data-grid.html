@@ -1,4 +1,32 @@
 <div class="grid-container">
+  <!-- Multi-Table Switcher Tabs (Rendered when multiple tables are returned) -->
+  @if (dataService.tables().length > 1) {
+    <div class="table-tabs-header">
+      <div class="table-tabs-list">
+        @for (tbl of dataService.tables(); track tbl.tableName; let idx = $index) {
+          <button 
+            type="button" 
+            class="table-tab-btn" 
+            [class.active]="dataService.selectedTableIndex() === idx"
+            (click)="dataService.selectTable(idx)">
+            <span class="tab-title">{{ tbl.tableName }}</span>
+            <span class="tab-badge">{{ tbl.rows.length }}</span>
+          </button>
+        }
+      </div>
+
+      @if (dataService.activeTable()?.parentKeyName; as parentKey) {
+        <div class="linked-subtable-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="link-icon">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+          <span>Linked Child Table (Foreign Key: <code>{{ parentKey }}</code>)</span>
+        </div>
+      }
+    </div>
+  }
+
   <div class="table-wrapper">
     <table class="enterprise-table">
       <thead>
@@ -10,83 +38,48 @@
               (change)="toggleSelectAll($event)"
             />
           </th>
-          <th class="col-sku">SKU / ID</th>
-          <th class="col-name">Item Description</th>
-          <th class="col-category">Category</th>
-          <th class="col-subgraph">Subgraph</th>
-          <th class="col-qty text-right">Quantity</th>
-          <th class="col-price text-right">Unit Price</th>
-          <th class="col-status">Status</th>
+          @for (col of activeColumns; track col.key) {
+            <th [class.text-right]="col.type === 'currency' || col.type === 'number'">
+              {{ col.label }}
+            </th>
+          }
           <th class="col-actions text-center">Actions</th>
         </tr>
       </thead>
       <tbody>
-        @for (item of dataService.paginatedItems(); track item.id) {
-          <tr [class.row-selected]="isItemSelected(item.id)">
+        @for (row of dataService.paginatedRows(); track getRowId(row, $index); let rIdx = $index) {
+          <tr [class.row-selected]="isRowSelected(getRowId(row, rIdx))">
             <td class="col-checkbox">
               <input 
                 type="checkbox" 
-                [checked]="isItemSelected(item.id)"
-                (change)="toggleSelectItem(item.id)"
+                [checked]="isRowSelected(getRowId(row, rIdx))"
+                (change)="toggleSelectRow(getRowId(row, rIdx))"
               />
             </td>
-            <td class="col-sku">
-              <span class="sku-code">{{ item.sku }}</span>
-            </td>
-            <td class="col-name">
-              <div class="name-cell">
-                <span class="item-name">{{ item.name }}</span>
-                <span class="item-id-sub">Ref: {{ item.id }}</span>
-              </div>
-            </td>
-            <td class="col-category">
-              <span class="category-tag">{{ item.category }}</span>
-            </td>
-            <td class="col-subgraph">
-              <span class="badge badge-subgraph">{{ item.subgraph }}</span>
-            </td>
-            <td class="col-qty text-right">
-              <div class="qty-cell">
-                <span class="qty-val" [class.qty-critical]="item.status === 'critical_low'">
-                  {{ item.quantity | number }}
-                </span>
-                @if (item.reorderPoint > 0) {
-                  <span class="reorder-sub">Min: {{ item.reorderPoint }}</span>
+            @for (col of activeColumns; track col.key) {
+              <td [class.text-right]="col.type === 'currency' || col.type === 'number'">
+                @if (col.type === 'currency') {
+                  <span class="price-val">{{ formatCurrency(row[col.key]) }}</span>
+                } @else if (col.type === 'badge') {
+                  <span class="badge" [ngClass]="getBadgeClass(row[col.key])">
+                    <span class="badge-dot"></span>
+                    {{ row[col.key] }}
+                  </span>
+                } @else if (col.type === 'date') {
+                  <span class="date-val">{{ row[col.key] }}</span>
+                } @else if (col.type === 'number') {
+                  <span class="qty-val">{{ row[col.key] | number }}</span>
+                } @else {
+                  <span class="text-cell">{{ row[col.key] ?? '—' }}</span>
                 }
-              </div>
-            </td>
-            <td class="col-price text-right">
-              <span class="price-val">${{ item.unitPrice | number:'1.2-2' }}</span>
-            </td>
-            <td class="col-status">
-              @if (item.status === 'in_stock') {
-                <span class="badge badge-success">
-                  <span class="badge-dot"></span>
-                  {{ item.statusLabel }}
-                </span>
-              } @else if (item.status === 'critical_low') {
-                <span class="badge badge-error">
-                  <span class="badge-dot"></span>
-                  {{ item.statusLabel }}
-                </span>
-              } @else if (item.status === 'pending_po') {
-                <span class="badge badge-warning">
-                  <span class="badge-dot"></span>
-                  {{ item.statusLabel }}
-                </span>
-              } @else {
-                <span class="badge badge-info">
-                  <span class="badge-dot"></span>
-                  {{ item.statusLabel }}
-                </span>
-              }
-            </td>
+              </td>
+            }
             <td class="col-actions text-center">
               <button 
                 type="button" 
                 class="btn-copilot-ask" 
-                title="Chat with AI about this item"
-                (click)="onAskItemCopilot(item)">
+                title="Chat with AI about this record"
+                (click)="onAskRowCopilot(row)">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ask-icon">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
@@ -103,7 +96,7 @@
   <div class="pagination-bar">
     <div class="pagination-left">
       <span class="pagination-info">
-        Showing <strong>{{ startRange }}</strong>–<strong>{{ endRange }}</strong> of <strong>{{ dataService.totalFilteredCount() }}</strong> records
+        Showing <strong>{{ startRange }}</strong>–<strong>{{ endRange }}</strong> of <strong>{{ dataService.totalFilteredCount() }}</strong> records in <em>{{ dataService.activeTable()?.tableName }}</em>
       </span>
       <div class="page-size-selector">
         <label for="pageSizeSelect">Rows per page:</label>

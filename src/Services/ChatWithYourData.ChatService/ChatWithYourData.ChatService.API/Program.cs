@@ -1,6 +1,5 @@
-using System.Runtime.CompilerServices;
-using System.Text.Json;
 using ChatWithYourData.ChatService.API.Configuration;
+using ChatWithYourData.ChatService.API.Models;
 using ChatWithYourData.ChatService.API.Services;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Hosting.AGUI.AspNetCore;
@@ -92,6 +91,9 @@ builder.Services.AddSingleton<AIAgent>(sp =>
 // Register AG-UI Server Support
 builder.Services.AddAGUIServer();
 
+// Register Data Query Service for structured MCP query data endpoint
+builder.Services.AddSingleton<IDataQueryService, DataQueryService>();
+
 var app = builder.Build();
 
 app.UseCors("AllowAll");
@@ -99,6 +101,13 @@ app.UseCors("AllowAll");
 // Map AG-UI Protocol Endpoint
 var agent = app.Services.GetRequiredService<AIAgent>();
 app.MapAGUIServer(agentOptions.AgUiEndpoint, agent);
+
+// Map Structured Agent Data Query Endpoint
+app.MapPost("/api/data/query", async (DataQueryRequest request, IDataQueryService queryService, CancellationToken ct) =>
+{
+    var response = await queryService.QueryAsync(request, ct);
+    return Results.Ok(response);
+});
 
 // Map Diagnostics & Health Endpoints
 app.MapGet("/", async (IMcpToolProvider toolProvider, Microsoft.Extensions.Options.IOptions<AgentOptions> options) =>

@@ -25,14 +25,14 @@ export class QueryHeaderComponent {
   ];
 
   onSearchSubmit() {
-    this.dataService.simulateLoading(400);
-    this.dataService.setSearchQuery(this.queryInput());
+    const query = this.queryInput().trim();
+    if (!query) return;
+    this.dataService.queryData(query);
   }
 
   applySuggestion(suggestion: string) {
     this.queryInput.set(suggestion);
-    this.dataService.simulateLoading(350);
-    this.dataService.setSearchQuery(suggestion);
+    this.dataService.queryData(suggestion);
   }
 
   onCategoryChange(event: Event) {

@@ -1,7 +1,19 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { LineItem, KpiSummary, FilterState, ViewState, SubgraphModule } from '../models/data.models';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { TableColumn, TableData, DynamicDataQueryResponse, KpiSummary, FilterState, ViewState, SubgraphModule } from '../models/data.models';
 
-const INITIAL_ITEMS: LineItem[] = [
+const INITIAL_COLUMNS: TableColumn[] = [
+  { key: 'sku', label: 'SKU / Reference', type: 'string' },
+  { key: 'name', label: 'Item / Record Name', type: 'string' },
+  { key: 'category', label: 'Category', type: 'string' },
+  { key: 'subgraph', label: 'Subgraph', type: 'string' },
+  { key: 'quantity', label: 'Quantity', type: 'number' },
+  { key: 'unitPrice', label: 'Unit Price', type: 'currency' },
+  { key: 'status', label: 'Status', type: 'badge' },
+  { key: 'lastUpdated', label: 'Last Updated', type: 'date' }
+];
+
+const INITIAL_ROWS: Record<string, any>[] = [
   {
     id: 'ITEM-1001',
     sku: 'INV-RAW-401',
@@ -11,8 +23,7 @@ const INITIAL_ITEMS: LineItem[] = [
     quantity: 140,
     unitPrice: 125.00,
     currency: 'USD',
-    status: 'critical_low',
-    statusLabel: 'Critical Low',
+    status: 'Critical Low',
     reorderPoint: 200,
     lastUpdated: '2026-08-31 09:15'
   },
@@ -25,8 +36,7 @@ const INITIAL_ITEMS: LineItem[] = [
     quantity: 850,
     unitPrice: 42.50,
     currency: 'USD',
-    status: 'in_stock',
-    statusLabel: 'In Stock',
+    status: 'In Stock',
     reorderPoint: 300,
     lastUpdated: '2026-08-31 11:30'
   },
@@ -39,8 +49,7 @@ const INITIAL_ITEMS: LineItem[] = [
     quantity: 5000,
     unitPrice: 3.85,
     currency: 'USD',
-    status: 'pending_po',
-    statusLabel: 'Pending PO Approval',
+    status: 'Pending PO Approval',
     reorderPoint: 1000,
     lastUpdated: '2026-08-30 16:45'
   },
@@ -53,8 +62,7 @@ const INITIAL_ITEMS: LineItem[] = [
     quantity: 35,
     unitPrice: 1890.00,
     currency: 'USD',
-    status: 'fulfilled',
-    statusLabel: 'Fulfilled Order',
+    status: 'Fulfilled Order',
     reorderPoint: 10,
     lastUpdated: '2026-08-31 14:20'
   },
@@ -67,8 +75,7 @@ const INITIAL_ITEMS: LineItem[] = [
     quantity: 12,
     unitPrice: 14500.00,
     currency: 'USD',
-    status: 'in_stock',
-    statusLabel: 'Active Ledger',
+    status: 'Active Ledger',
     reorderPoint: 0,
     lastUpdated: '2026-08-29 18:00'
   },
@@ -81,66 +88,19 @@ const INITIAL_ITEMS: LineItem[] = [
     quantity: 48,
     unitPrice: 95.00,
     currency: 'USD',
-    status: 'critical_low',
-    statusLabel: 'Critical Low',
+    status: 'Critical Low',
     reorderPoint: 100,
     lastUpdated: '2026-08-31 08:00'
-  },
+  }
+];
+
+const INITIAL_TABLES: TableData[] = [
   {
-    id: 'ITEM-1007',
-    sku: 'PO-9945-B',
-    name: 'Precision Aluminum Heat Sinks CNC Extruded',
-    category: 'Thermal Management',
-    subgraph: 'Procurement',
-    quantity: 2400,
-    unitPrice: 18.20,
-    currency: 'USD',
-    status: 'pending_po',
-    statusLabel: 'Supplier Confirmation',
-    reorderPoint: 500,
-    lastUpdated: '2026-08-31 10:10'
-  },
-  {
-    id: 'ITEM-1008',
-    sku: 'SO-8840-EU',
-    name: 'Industrial Smart Gateway Edge AI Unit',
-    category: 'IoT Edge Computing',
-    subgraph: 'Sales',
-    quantity: 120,
-    unitPrice: 620.00,
-    currency: 'USD',
-    status: 'in_stock',
-    statusLabel: 'Processing Delivery',
-    reorderPoint: 25,
-    lastUpdated: '2026-08-31 13:45'
-  },
-  {
-    id: 'ITEM-1009',
-    sku: 'FIN-TAX-2026',
-    name: 'Cross-Border VAT & Compliance Reserve',
-    category: 'Tax & Compliance',
-    subgraph: 'Finance',
-    quantity: 1,
-    unitPrice: 84000.00,
-    currency: 'USD',
-    status: 'fulfilled',
-    statusLabel: 'Reconciled',
-    reorderPoint: 0,
-    lastUpdated: '2026-08-28 17:30'
-  },
-  {
-    id: 'ITEM-1010',
-    sku: 'INV-ASM-503',
-    name: 'High-Density Lithium-Polymer Battery Pack 48V',
-    category: 'Energy Storage',
-    subgraph: 'Inventory',
-    quantity: 18,
-    unitPrice: 480.00,
-    currency: 'USD',
-    status: 'critical_low',
-    statusLabel: 'Critical Low',
-    reorderPoint: 50,
-    lastUpdated: '2026-08-31 07:30'
+    tableName: 'Enterprise ERP Records',
+    description: 'Federated records across Inventory, Sales, Procurement, and Finance',
+    parentKeyName: null,
+    columns: INITIAL_COLUMNS,
+    rows: INITIAL_ROWS
   }
 ];
 
@@ -148,10 +108,14 @@ const INITIAL_ITEMS: LineItem[] = [
   providedIn: 'root'
 })
 export class DataService {
-  private readonly allItems = signal<LineItem[]>(INITIAL_ITEMS);
+  private readonly http = inject(HttpClient);
+  
+  readonly tables = signal<TableData[]>(INITIAL_TABLES);
+  readonly selectedTableIndex = signal<number>(0);
   
   readonly viewState = signal<ViewState>('ready');
   readonly errorMessage = signal<string | null>(null);
+  readonly querySummary = signal<string | null>(null);
 
   readonly filters = signal<FilterState>({
     searchQuery: '',
@@ -162,48 +126,29 @@ export class DataService {
     pageSize: 5
   });
 
-  // Filtered dataset
-  readonly filteredItems = computed(() => {
-    const items = this.allItems();
-    const f = this.filters();
-    const query = f.searchQuery.toLowerCase().trim();
-
-    return items.filter(item => {
-      // Subgraph filter
-      if (f.subgraph !== 'All' && item.subgraph !== f.subgraph) {
-        return false;
-      }
-      // Status filter
-      if (f.status !== 'All' && item.status !== f.status) {
-        return false;
-      }
-      // Category filter
-      if (f.category !== 'All' && item.category !== f.category) {
-        return false;
-      }
-      // Search query (matches SKU, name, or category)
-      if (query) {
-        const matchSku = item.sku.toLowerCase().includes(query);
-        const matchName = item.name.toLowerCase().includes(query);
-        const matchCat = item.category.toLowerCase().includes(query);
-        const matchSub = item.subgraph.toLowerCase().includes(query);
-        if (!matchSku && !matchName && !matchCat && !matchSub) {
-          return false;
-        }
-      }
-      return true;
-    });
+  // Active Selected Table
+  readonly activeTable = computed(() => {
+    const list = this.tables();
+    const idx = this.selectedTableIndex();
+    return list[idx] || list[0] || null;
   });
 
-  // Paginated view
-  readonly paginatedItems = computed(() => {
-    const list = this.filteredItems();
+  // Filtered rows for the active table (server-side LLM filtered)
+  readonly filteredRows = computed(() => {
+    const table = this.activeTable();
+    if (!table || !table.rows) return [];
+    return table.rows;
+  });
+
+  // Paginated rows for the active table
+  readonly paginatedRows = computed(() => {
+    const list = this.filteredRows();
     const f = this.filters();
     const start = (f.page - 1) * f.pageSize;
     return list.slice(start, start + f.pageSize);
   });
 
-  readonly totalFilteredCount = computed(() => this.filteredItems().length);
+  readonly totalFilteredCount = computed(() => this.filteredRows().length);
 
   readonly totalPages = computed(() => {
     const count = this.totalFilteredCount();
@@ -212,18 +157,86 @@ export class DataService {
   });
 
   readonly kpiSummary = computed<KpiSummary>(() => {
-    const items = this.allItems();
-    const totalVal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0);
-    const pending = items.filter(i => i.status === 'pending_po').length;
-    const critical = items.filter(i => i.status === 'critical_low').length;
+    const table = this.activeTable();
+    const rows = table?.rows || [];
+    
+    let totalVal = 0;
+    let pending = 0;
+    let critical = 0;
+
+    for (const r of rows) {
+      const price = Number(r['unitPrice'] || r['totalAmount'] || r['amount'] || 0);
+      const qty = Number(r['quantity'] || r['itemCount'] || 1);
+      totalVal += (price * qty);
+
+      const status = String(r['status'] || '').toLowerCase();
+      if (status.includes('pending')) pending++;
+      if (status.includes('critical') || status.includes('low')) critical++;
+    }
 
     return {
-      activeLineItems: 1248, // Global enterprise count
+      activeLineItems: rows.length > 0 ? rows.length : 1248,
       totalValue: totalVal > 0 ? totalVal : 4200000,
-      pendingOrders: 42,
-      criticalAlerts: critical + 2
+      pendingOrders: pending > 0 ? pending : 42,
+      criticalAlerts: critical > 0 ? critical : 2
     };
   });
+
+  selectTable(index: number) {
+    if (index >= 0 && index < this.tables().length) {
+      this.selectedTableIndex.set(index);
+      this.filters.update(f => ({ ...f, page: 1 }));
+    }
+  }
+
+  queryData(prompt: string) {
+    if (!prompt || !prompt.trim()) return;
+
+    this.viewState.set('loading');
+    this.errorMessage.set(null);
+    this.filters.update(f => ({ ...f, searchQuery: prompt, page: 1 }));
+
+    const payload = {
+      intent: prompt.trim()
+    };
+
+    this.http.post<DynamicDataQueryResponse>('http://localhost:5005/api/data/query', payload).subscribe({
+      next: (res) => {
+        if (res && res.success) {
+          if (res.tables && res.tables.length > 0 && res.tables.some(t => t.rows && t.rows.length > 0)) {
+            this.tables.set(res.tables);
+            this.selectedTableIndex.set(0);
+            this.querySummary.set(res.summary ?? null);
+            this.viewState.set('ready');
+          } else {
+            this.tables.set([]);
+            this.querySummary.set(res.summary ?? 'No matching records found.');
+            this.viewState.set('empty');
+          }
+        } else {
+          this.viewState.set('error');
+          this.errorMessage.set(res?.errorMessage || 'Agent was unable to retrieve live ERP data.');
+        }
+      },
+      error: (err) => {
+        // Fallback to initial table with local filter if agent service is restarting
+        const query = prompt.toLowerCase().trim();
+        const matched = INITIAL_ROWS.filter(r => 
+          Object.values(r).some(v => v !== null && v !== undefined && String(v).toLowerCase().includes(query))
+        );
+
+        if (matched.length > 0) {
+          this.tables.set(INITIAL_TABLES);
+          this.selectedTableIndex.set(0);
+          this.viewState.set('ready');
+          this.querySummary.set(`Showing client-side results for "${prompt}" (Agent endpoint offline).`);
+        } else {
+          this.viewState.set('error');
+          this.errorMessage.set(`Could not reach Agent at http://localhost:5005/api/data/query (${err.statusText || 'Connection Refused'})`);
+        }
+      }
+    });
+  }
 
   setSearchQuery(query: string) {
     this.filters.update(f => ({ ...f, searchQuery: query, page: 1 }));
@@ -276,12 +289,15 @@ export class DataService {
       page: 1,
       pageSize: 5
     });
+    this.tables.set(INITIAL_TABLES);
+    this.selectedTableIndex.set(0);
     this.viewState.set('ready');
     this.errorMessage.set(null);
   }
 
   private evaluateState() {
-    if (this.filteredItems().length === 0) {
+    const active = this.activeTable();
+    if (!active || active.rows.length === 0) {
       this.viewState.set('empty');
     } else {
       this.viewState.set('ready');
