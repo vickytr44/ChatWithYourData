@@ -1,0 +1,30 @@
+<div class="error-state-card">
+  <div class="error-icon-wrapper">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
+  </div>
+  <div class="error-content">
+    <div class="error-title-row">
+      <h3 class="error-title">Subgraph Gateway Resolution Failed</h3>
+      <span class="badge badge-error">HTTP 503 Gateway Timeout</span>
+    </div>
+    <p class="error-description">
+      {{ dataService.errorMessage() || 'Unable to resolve federated schema query across subgraphs. The gateway service or MCP tool provider is temporarily unreachable.' }}
+    </p>
+    <div class="error-details">
+      <code>Target Endpoint: http://localhost:5000/graphql/mcp &bull; Subgraphs: [Inventory, Sales, Procurement, Finance]</code>
+    </div>
+  </div>
+  <div class="error-actions">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="retry()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      <span>Retry Operation</span>
+    </button>
+  </div>
+</div>

@@ -1,8 +1,65 @@
-<div class="chat-container">
-  <copilot-chat [agentId]="'ChatWithYourDataERP'" />
-  <copilot-sidebar 
-    [(open)]="sidebarOpen" 
-    title="ChatWithYourData ERP Assistant" 
-    position="right" 
-    [width]="480" />
+<div class="enterprise-layout">
+  <!-- Top Navigation Bar -->
+  <app-navbar (toggleSidebar)="toggleSidebar()" />
+
+  <!-- Main Split Body -->
+  <div class="enterprise-body">
+    <main class="main-canvas">
+      <div class="content-wrapper">
+        <!-- Natural Language Query & Filter Header -->
+        <app-query-header />
+
+        <!-- Active Context Banner if item selected for AI query -->
+        @if (selectedItemContext(); as ctx) {
+          <div class="context-banner">
+            <div class="context-info">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="context-icon">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span>Active Context for AI: <strong>{{ ctx.name }}</strong> (<code>{{ ctx.sku }}</code>) in <strong>{{ ctx.subgraph }}</strong></span>
+            </div>
+            <button type="button" class="btn-clear-context" (click)="clearContext()">
+              Clear Context
+            </button>
+          </div>
+        }
+
+        <!-- Dynamic State Rendering: Loading, Error, Empty, or DataGrid -->
+        @if (dataService.viewState() === 'loading') {
+          <app-loading-state />
+        } @else if (dataService.viewState() === 'error') {
+          <app-error-state />
+        } @else if (dataService.viewState() === 'empty') {
+          <app-empty-state />
+        } @else {
+          <app-data-grid (askCopilot)="onAskItemCopilot($event)" />
+        }
+      </div>
+    </main>
+
+    <!-- Right-Side Docked Copilot Assistant Side Panel -->
+    <aside class="enterprise-copilot-pane" [class.collapsed]="!sidebarOpen()">
+      <div class="copilot-pane-header">
+        <div class="copilot-header-title">
+          <span class="pulse-dot"></span>
+          <div class="copilot-title-text">
+            <span class="copilot-title">ERP Copilot Assistant</span>
+            <span class="copilot-sub">Federated Multi-Service AI</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close-copilot" title="Close Copilot Panel" (click)="toggleSidebar()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="copilot-pane-body">
+        <copilot-chat [agentId]="'ChatWithYourDataERP'" />
+      </div>
+    </aside>
+  </div>
 </div>

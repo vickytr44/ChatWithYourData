@@ -1,0 +1,61 @@
+<header class="enterprise-navbar">
+  <!-- Left: Logo & Organization -->
+  <div class="navbar-left">
+    <div class="brand-logo">
+      <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+        <line x1="12" y1="22.08" x2="12" y2="12"></line>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-name">ChatWithYourData</span>
+        <span class="brand-tag">ERP FEDERATION</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Controls & AI Copilot Toggle -->
+  <div class="navbar-right">
+    <!-- State Simulation Triggers for Testing States -->
+    <div class="state-simulation-group">
+      <button class="sim-btn" title="Simulate Loading Skeleton" (click)="dataService.simulateLoading(1200)">
+        <svg class="sim-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="2" x2="12" y2="6"></line>
+          <line x1="12" y1="18" x2="12" y2="22"></line>
+          <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
+          <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
+          <line x1="2" y1="12" x2="6" y2="12"></line>
+          <line x1="18" y1="12" x2="22" y2="12"></line>
+        </svg>
+        <span>Test Loader</span>
+      </button>
+
+      <button class="sim-btn" title="Simulate Error State" (click)="dataService.simulateError()">
+        <svg class="sim-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <span>Test Error</span>
+      </button>
+    </div>
+
+    <!-- AI Copilot Assistant Status Button -->
+    <button class="copilot-toggle-btn" (click)="toggleSidebar.emit()">
+      <span class="pulse-dot"></span>
+      <svg class="copilot-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2a10 10 0 0 1 10 10c0 5.523-4.477 10-10 10a9.96 9.96 0 0 1-4.587-1.11L2 22l1.11-5.413A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2z"></path>
+      </svg>
+      <span>ERP Copilot</span>
+    </button>
+
+    <!-- User Profile & Org -->
+    <div class="user-profile">
+      <div class="avatar-badge">AP</div>
+      <div class="org-info">
+        <span class="user-name">Alex Vance</span>
+        <span class="org-name">Global Operations</span>
+      </div>
+    </div>
+  </div>
+</header>

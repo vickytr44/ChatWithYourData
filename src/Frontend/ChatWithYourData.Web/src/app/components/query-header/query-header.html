@@ -1,0 +1,70 @@
+<div class="query-card">
+  <!-- Query Bar Controls -->
+  <form class="query-form" (ngSubmit)="onSearchSubmit()">
+    <div class="search-input-wrapper">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input 
+        type="text" 
+        class="form-input search-input" 
+        placeholder="Ask or filter ERP data e.g. 'Show critical stock with pending procurement orders'..."
+        [ngModel]="queryInput()"
+        (ngModelChange)="queryInput.set($event)"
+        name="searchQuery"
+      />
+      @if (queryInput()) {
+        <button type="button" class="btn-clear" (click)="clearSearch()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      }
+    </div>
+
+    <!-- Category Dropdown Filter -->
+    <div class="filter-group">
+      <select class="form-select" (change)="onCategoryChange($event)" [value]="selectedCategory()">
+        <option value="All">All Categories</option>
+        <option value="Semiconductor Raw Materials">Semiconductor Materials</option>
+        <option value="Electronic Components">Electronic Components</option>
+        <option value="Datacenter Hardware">Datacenter Hardware</option>
+        <option value="Operating Expenditure">OpEx Ledger</option>
+        <option value="Networking Hardware">Networking</option>
+      </select>
+    </div>
+
+    <!-- Status Dropdown Filter -->
+    <div class="filter-group">
+      <select class="form-select" (change)="onStatusChange($event)" [value]="selectedStatus()">
+        <option value="All">All Statuses</option>
+        <option value="in_stock">In Stock</option>
+        <option value="critical_low">Critical Low</option>
+        <option value="pending_po">Pending Approval</option>
+        <option value="fulfilled">Fulfilled / Reconciled</option>
+      </select>
+    </div>
+
+    <!-- Execute Query Action -->
+    <button type="submit" class="btn btn-primary query-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon-svg">
+        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+      </svg>
+      <span>Query Data</span>
+    </button>
+  </form>
+
+  <!-- Suggestion Chips Bar -->
+  <div class="chips-row">
+    <span class="chips-label">Quick Suggestions:</span>
+    <div class="chips-list">
+      @for (chip of suggestionChips; track chip.query) {
+        <button type="button" class="chip-btn" (click)="applySuggestion(chip.query)">
+          <span>{{ chip.label }}</span>
+        </button>
+      }
+    </div>
+  </div>
+</div>

@@ -1,0 +1,89 @@
+<div class="kpi-strip">
+  <!-- Metric 1: Active Line Items -->
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Active Line Items</span>
+      <div class="kpi-icon-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="8" y1="6" x2="21" y2="6"></line>
+          <line x1="8" y1="12" x2="21" y2="12"></line>
+          <line x1="8" y1="18" x2="21" y2="18"></line>
+          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value">{{ dataService.kpiSummary().activeLineItems | number }}</span>
+      <span class="trend-badge trend-up">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+        +4.8%
+      </span>
+    </div>
+    <span class="kpi-subtext">Across 4 Federated Subgraphs</span>
+  </div>
+
+  <!-- Metric 2: Total Asset Value -->
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Total Portfolio Value</span>
+      <div class="kpi-icon-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="1" x2="12" y2="23"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value">$4.28M</span>
+      <span class="trend-badge trend-up">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+        +12.4%
+      </span>
+    </div>
+    <span class="kpi-subtext">Reconciled with Finance Subgraph</span>
+  </div>
+
+  <!-- Metric 3: Pending POs -->
+  <div class="kpi-card">
+    <div class="kpi-header">
+      <span class="kpi-label">Pending Orders / POs</span>
+      <div class="kpi-icon-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+          <line x1="3" y1="6" x2="21" y2="6"></line>
+          <path d="M16 10a4 4 0 0 1-8 0"></path>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value">{{ dataService.kpiSummary().pendingOrders }}</span>
+      <span class="trend-badge trend-neutral">Awaiting Approval</span>
+    </div>
+    <span class="kpi-subtext">Avg Lead Time: 8.4 Days</span>
+  </div>
+
+  <!-- Metric 4: Critical Alerts -->
+  <div class="kpi-card alert-card">
+    <div class="kpi-header">
+      <span class="kpi-label alert-text">Critical Alerts</span>
+      <div class="kpi-icon-box alert-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value alert-text">{{ dataService.kpiSummary().criticalAlerts }}</span>
+      <span class="trend-badge trend-alert">Action Required</span>
+    </div>
+    <span class="kpi-subtext">Stock &lt; Reorder Point Threshold</span>
+  </div>
+</div>

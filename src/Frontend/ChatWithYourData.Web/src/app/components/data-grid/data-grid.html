@@ -1,0 +1,154 @@
+<div class="grid-container">
+  <div class="table-wrapper">
+    <table class="enterprise-table">
+      <thead>
+        <tr>
+          <th class="col-checkbox">
+            <input 
+              type="checkbox" 
+              [checked]="allCurrentPageSelected"
+              (change)="toggleSelectAll($event)"
+            />
+          </th>
+          <th class="col-sku">SKU / ID</th>
+          <th class="col-name">Item Description</th>
+          <th class="col-category">Category</th>
+          <th class="col-subgraph">Subgraph</th>
+          <th class="col-qty text-right">Quantity</th>
+          <th class="col-price text-right">Unit Price</th>
+          <th class="col-status">Status</th>
+          <th class="col-actions text-center">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of dataService.paginatedItems(); track item.id) {
+          <tr [class.row-selected]="isItemSelected(item.id)">
+            <td class="col-checkbox">
+              <input 
+                type="checkbox" 
+                [checked]="isItemSelected(item.id)"
+                (change)="toggleSelectItem(item.id)"
+              />
+            </td>
+            <td class="col-sku">
+              <span class="sku-code">{{ item.sku }}</span>
+            </td>
+            <td class="col-name">
+              <div class="name-cell">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-id-sub">Ref: {{ item.id }}</span>
+              </div>
+            </td>
+            <td class="col-category">
+              <span class="category-tag">{{ item.category }}</span>
+            </td>
+            <td class="col-subgraph">
+              <span class="badge badge-subgraph">{{ item.subgraph }}</span>
+            </td>
+            <td class="col-qty text-right">
+              <div class="qty-cell">
+                <span class="qty-val" [class.qty-critical]="item.status === 'critical_low'">
+                  {{ item.quantity | number }}
+                </span>
+                @if (item.reorderPoint > 0) {
+                  <span class="reorder-sub">Min: {{ item.reorderPoint }}</span>
+                }
+              </div>
+            </td>
+            <td class="col-price text-right">
+              <span class="price-val">${{ item.unitPrice | number:'1.2-2' }}</span>
+            </td>
+            <td class="col-status">
+              @if (item.status === 'in_stock') {
+                <span class="badge badge-success">
+                  <span class="badge-dot"></span>
+                  {{ item.statusLabel }}
+                </span>
+              } @else if (item.status === 'critical_low') {
+                <span class="badge badge-error">
+                  <span class="badge-dot"></span>
+                  {{ item.statusLabel }}
+                </span>
+              } @else if (item.status === 'pending_po') {
+                <span class="badge badge-warning">
+                  <span class="badge-dot"></span>
+                  {{ item.statusLabel }}
+                </span>
+              } @else {
+                <span class="badge badge-info">
+                  <span class="badge-dot"></span>
+                  {{ item.statusLabel }}
+                </span>
+              }
+            </td>
+            <td class="col-actions text-center">
+              <button 
+                type="button" 
+                class="btn-copilot-ask" 
+                title="Chat with AI about this item"
+                (click)="onAskItemCopilot(item)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ask-icon">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Ask Copilot</span>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Enterprise Pagination Bar -->
+  <div class="pagination-bar">
+    <div class="pagination-left">
+      <span class="pagination-info">
+        Showing <strong>{{ startRange }}</strong>–<strong>{{ endRange }}</strong> of <strong>{{ dataService.totalFilteredCount() }}</strong> records
+      </span>
+      <div class="page-size-selector">
+        <label for="pageSizeSelect">Rows per page:</label>
+        <select id="pageSizeSelect" class="form-select-sm" (change)="onPageSizeChange($event)" [value]="dataService.filters().pageSize">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="25">25</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="pagination-right">
+      <button 
+        type="button" 
+        class="page-nav-btn" 
+        [disabled]="dataService.filters().page <= 1"
+        (click)="dataService.setPage(dataService.filters().page - 1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+        <span>Previous</span>
+      </button>
+
+      <div class="page-numbers">
+        @for (p of pages; track p) {
+          <button 
+            type="button" 
+            class="page-number-btn" 
+            [class.active]="dataService.filters().page === p"
+            (click)="dataService.setPage(p)">
+            {{ p }}
+          </button>
+        }
+      </div>
+
+      <button 
+        type="button" 
+        class="page-nav-btn" 
+        [disabled]="dataService.filters().page >= dataService.totalPages()"
+        (click)="dataService.setPage(dataService.filters().page + 1)">
+        <span>Next</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>

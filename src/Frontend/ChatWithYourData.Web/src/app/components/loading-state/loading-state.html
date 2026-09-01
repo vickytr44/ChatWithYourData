@@ -1,0 +1,33 @@
+<div class="loading-state-card">
+  <div class="loading-header">
+    <div class="skeleton skeleton-title"></div>
+    <div class="skeleton skeleton-btn"></div>
+  </div>
+
+  <div class="skeleton-table">
+    <div class="skeleton-row header-row">
+      <div class="skeleton skeleton-cell w-10"></div>
+      <div class="skeleton skeleton-cell w-20"></div>
+      <div class="skeleton skeleton-cell w-30"></div>
+      <div class="skeleton skeleton-cell w-15"></div>
+      <div class="skeleton skeleton-cell w-10"></div>
+      <div class="skeleton skeleton-cell w-15"></div>
+    </div>
+
+    @for (row of skeletonRows; track $index) {
+      <div class="skeleton-row">
+        <div class="skeleton skeleton-cell w-10"></div>
+        <div class="skeleton skeleton-cell w-20"></div>
+        <div class="skeleton skeleton-cell w-30"></div>
+        <div class="skeleton skeleton-cell w-15"></div>
+        <div class="skeleton skeleton-cell w-10"></div>
+        <div class="skeleton skeleton-cell w-15"></div>
+      </div>
+    }
+  </div>
+
+  <div class="loading-footer">
+    <div class="skeleton skeleton-pagination-info"></div>
+    <div class="skeleton skeleton-pagination-pages"></div>
+  </div>
+</div>
